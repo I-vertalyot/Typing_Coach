@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Type &amp; Talk Typing Coach</title>
+<title>Typing Coach</title>
 <meta name="description" content="Ten-finger typing lessons that also teach English writing and clear requests to Claude.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,7 +94,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-bottom: 1px solid var(--rule);
 }
 .top-in { max-width: 1100px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 22px; }
-.brand { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-variation-settings: "CASL" 1; font-weight: 800; font-size: 20px; flex: none; }
+.brand { display: inline-flex; align-items: center; gap: 2px; text-decoration: none; font-variation-settings: "CASL" 1; font-weight: 800; font-size: 20px; flex: none; }
 .brand-kc { font-size: 15px; min-width: 28px; height: 28px; display: inline-grid; place-items: center; }
 .nav { display: flex; gap: 4px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 .nav::-webkit-scrollbar { display: none; }
@@ -1862,7 +1862,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   };
 })(globalThis.TT = globalThis.TT || {});
 
-/* Type & Talk — app: state, sync, typing engine, views, router. */
+/* Typing Coach — app: state, sync, typing engine, views, router. */
 (function (TT) {
   'use strict';
   const { h, icon } = TT;
@@ -2223,8 +2223,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       NAV.map(([id, label]) => h('a', { href: '#' + id, class: 'nav-link', dataset: { nav: id } }, label)));
     const header = h('header', { class: 'top' },
       h('div', { class: 'top-in' },
-        h('a', { class: 'brand', href: '#learn', 'aria-label': 'Type and Talk, home' },
-          h('span', { class: 'brand-w' }, 'Type'), h('span', { class: 'kc brand-kc' }, '&'), h('span', { class: 'brand-w' }, 'Talk')),
+        h('a', { class: 'brand', href: '#learn', 'aria-label': 'Typing Coach, home' },
+          h('span', { class: 'kc brand-kc', 'aria-hidden': 'true' }, 'T'), h('span', { class: 'brand-w', 'aria-hidden': 'true' }, 'yping Coach')),
         nav,
         h('div', { class: 'sync-wrap' },
           h('button', { class: 'sync', id: 'sync-btn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'sync-pop', onclick: toggleSyncPop }),
@@ -3483,7 +3483,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       saveState(); saveTextsLocal(); saveJournal(); applySettings();
       TT.toast('Backup restored.');
       render();
-    } catch (e) { TT.toast('This is not a Type & Talk backup. Copy it again and paste all of it.'); }
+    } catch (e) { TT.toast('This is not a Typing Coach backup. Copy it again and paste all of it.'); }
   }
   async function resetAll() {
     const ok = await TT.dialog({ title: 'Reset all progress?', body: 'Lessons, stars, history and key statistics are deleted on all your devices. Your texts and settings stay.', ok: 'Reset progress', danger: true });

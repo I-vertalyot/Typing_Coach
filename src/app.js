@@ -1,4 +1,4 @@
-/* Type & Talk — app: state, sync, typing engine, views, router. */
+/* Typing Coach — app: state, sync, typing engine, views, router. */
 (function (TT) {
   'use strict';
   const { h, icon } = TT;
@@ -359,8 +359,8 @@
       NAV.map(([id, label]) => h('a', { href: '#' + id, class: 'nav-link', dataset: { nav: id } }, label)));
     const header = h('header', { class: 'top' },
       h('div', { class: 'top-in' },
-        h('a', { class: 'brand', href: '#learn', 'aria-label': 'Type and Talk, home' },
-          h('span', { class: 'brand-w' }, 'Type'), h('span', { class: 'kc brand-kc' }, '&'), h('span', { class: 'brand-w' }, 'Talk')),
+        h('a', { class: 'brand', href: '#learn', 'aria-label': 'Typing Coach, home' },
+          h('span', { class: 'kc brand-kc', 'aria-hidden': 'true' }, 'T'), h('span', { class: 'brand-w', 'aria-hidden': 'true' }, 'yping Coach')),
         nav,
         h('div', { class: 'sync-wrap' },
           h('button', { class: 'sync', id: 'sync-btn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'sync-pop', onclick: toggleSyncPop }),
@@ -1619,7 +1619,7 @@
       saveState(); saveTextsLocal(); saveJournal(); applySettings();
       TT.toast('Backup restored.');
       render();
-    } catch (e) { TT.toast('This is not a Type & Talk backup. Copy it again and paste all of it.'); }
+    } catch (e) { TT.toast('This is not a Typing Coach backup. Copy it again and paste all of it.'); }
   }
   async function resetAll() {
     const ok = await TT.dialog({ title: 'Reset all progress?', body: 'Lessons, stars, history and key statistics are deleted on all your devices. Your texts and settings stay.', ok: 'Reset progress', danger: true });

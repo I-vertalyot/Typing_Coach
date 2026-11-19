@@ -1,4 +1,4 @@
-# Type & Talk: Typing Coach
+# Typing Coach
 
 Learn to type with all ten fingers. Every lesson also teaches one English writing point and one tip for writing clear requests to Claude.
 
