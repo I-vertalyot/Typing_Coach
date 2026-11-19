@@ -354,7 +354,8 @@ label { font-weight: 600; font-size: 14px; }
 .res-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 
 /* ── Practice ── */
-.drills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.drills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.hand-card .cta-row { gap: 8px; }
 .drill { display: grid; gap: 10px; align-content: space-between; }
 .drill-body { min-height: 30px; }
 .drill .btn { justify-self: start; }
@@ -949,6 +950,11 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       body: 'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! Sphinx of black quartz, judge my vow. The five boxing wizards jump quickly.'
     }
   ];
+
+  // Words typed with one hand on QWERTY (on QWERTZ, y and z change hands; the app filters by your layout).
+  TT.HAND_WORDS = ('was were we are as at be bed best bet bear beer bread break brave car card care case cast cat crew create dad data date dear draft drag draw dress east eat edge face fact fast fear feed feet few free gas gate gave get grab grace grade grass great greet race rare rate raw read rear red rest sad safe save saw scare sea seat see set sew star start state stress street sweet swear tax tea tear test text tree vase vast wage war ward wear web west wet water after address average better career dessert extract greater regard reward sweater taxes trade treat verb wax exceed effect bass beat crest dart decade degree desert drafts estate fewer gear graze grace sweat target tested vest zebra cards dates fastest gazette reserve severe trade' + ' ' +
+    'you him hip hook hop hum ill inn ink join joy jump kill kiln kin lily link lion lip lump mill milk mink mom monk moon mop my no noon nook nun oil oily on onion only opinion pill pink plum plump poll polo pony pool pop pull pump puppy union yolk yummy hilly holly hymn kimono lollipop million minimum monopoly nylon phony pinky pupil ion lookup unhook polio poppy mommy hippo lumpy pulp hull hill look loop mono nil pin pun hook'
+  ).split(' ').filter(Boolean);
 
   // Common English words for random drills (lowercase).
   TT.WORDS = ('the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us is are was were been has had did said very here more need help write read learn word words question answer example simple short long clear idea ideas text email please thank thanks problem change start finish try ask tell show find keep let mean each many much why where still every again before between same different important right wrong easy hard next last little own part place number sentence letter page list line point step fact case kind week today tomorrow yesterday always never often sometimes usually maybe really sure great better best small big old young high low open close call send check fix explain describe compare summarize translate improve correct rewrite suggest create plan review lesson finger fingers keyboard type typing grammar meaning shorter simpler friendly formal polite context format tone level').split(' ');
@@ -2852,7 +2858,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
         weak.length ? () => startDrill('weak') : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
-      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')));
+      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
+      handCard());
     wrap.append(sectionHead('Quick drills'), drills);
 
     // my texts
@@ -2878,6 +2885,31 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     wrap.append(h('section', null, sectionHead('Starter texts', 'Useful phrases for emails and for working with Claude.'),
       h('ul', { class: 'text-list' }, TT.STARTERS.map(t => textRow(t, false)))));
     view.append(wrap);
+  }
+
+  // Accuracy of each hand, from the per-key counters.
+  function handStats() {
+    const tot = keyTotals(), out = { L: [0, 0], R: [0, 0] };
+    Object.keys(tot).forEach(c => {
+      const t = TT.keyFor(App.layout, c);
+      if (!t || t.finger === 'th') return;
+      const hand = TT.FINGERS[t.finger].hand;
+      out[hand][0] += tot[c][0]; out[hand][1] += tot[c][1];
+    });
+    const acc = (x) => x[0] + x[1] >= 20 ? x[0] / (x[0] + x[1]) : null;
+    return { L: acc(out.L), R: acc(out.R) };
+  }
+  function handCard() {
+    const hs = handStats();
+    const weaker = hs.L != null && hs.R != null ? (hs.L < hs.R ? 'L' : 'R') : null;
+    const pct = (a) => a == null ? '–' : Math.round(a * 1000) / 10 + '%';
+    const btn = (hand, label) => h('button', { class: 'btn small ' + (weaker === hand ? 'primary' : 'ghost'), type: 'button', onclick: () => startDrill(hand === 'L' ? 'left' : 'right') }, icon('play'), label);
+    return h('div', { class: 'panel drill hand-card' },
+      h('h3', null, 'Train one hand'),
+      h('div', { class: 'drill-body' },
+        hs.L == null && hs.R == null ? h('span', { class: 'muted small' }, 'Words you type with only one hand.') :
+          h('span', { class: 'small muted' }, 'Correct keys: left ' + pct(hs.L) + ' · right ' + pct(hs.R) + (weaker ? '. Your ' + (weaker === 'L' ? 'left' : 'right') + ' hand needs more practice.' : ''))),
+      h('div', { class: 'cta-row' }, btn('L', 'Left hand'), btn('R', 'Right hand')));
   }
 
   function drillCard(title, body, act) {
@@ -3004,13 +3036,24 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     } else if (kind === 'known') {
       text = TT.makeDrill(dictionary(), learned, [], 18);
       title = 'Words with keys you know';
+    } else if (kind === 'left' || kind === 'right') {
+      // Letters that this hand types on the current layout.
+      const hand = kind === 'left' ? 'L' : 'R';
+      const handSet = new Set([' ']);
+      'abcdefghijklmnopqrstuvwxyz'.split('').forEach(c => { const t = TT.keyFor(App.layout, c); if (t && TT.FINGERS[t.finger].hand === hand) handSet.add(c); });
+      const pool = Array.from(new Set(dictionary().concat(TT.HAND_WORDS))).filter(w => w.length > 1 && w.split('').every(c => handSet.has(c)));
+      const known = new Set([...handSet].filter(c => learned.has(c)));
+      const usable = pool.filter(w => w.split('').every(c => known.has(c)));
+      const focus = weakKeys(8).map(k => k.c.toLowerCase()).filter(c => handSet.has(c));
+      text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, 18);
+      title = (kind === 'left' ? 'Left' : 'Right') + ' hand only';
     } else {
       text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], 18);
       title = 'Common English words';
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({
-      kind: 'drill', title, sub: 'Random words', text, lang: 'en', target: targetFor(20),
+      kind: 'drill', title, sub: kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20),
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         recordSession('drill', kind, title, st);

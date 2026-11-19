@@ -988,7 +988,8 @@
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
         weak.length ? () => startDrill('weak') : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
-      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')));
+      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
+      handCard());
     wrap.append(sectionHead('Quick drills'), drills);
 
     // my texts
@@ -1014,6 +1015,31 @@
     wrap.append(h('section', null, sectionHead('Starter texts', 'Useful phrases for emails and for working with Claude.'),
       h('ul', { class: 'text-list' }, TT.STARTERS.map(t => textRow(t, false)))));
     view.append(wrap);
+  }
+
+  // Accuracy of each hand, from the per-key counters.
+  function handStats() {
+    const tot = keyTotals(), out = { L: [0, 0], R: [0, 0] };
+    Object.keys(tot).forEach(c => {
+      const t = TT.keyFor(App.layout, c);
+      if (!t || t.finger === 'th') return;
+      const hand = TT.FINGERS[t.finger].hand;
+      out[hand][0] += tot[c][0]; out[hand][1] += tot[c][1];
+    });
+    const acc = (x) => x[0] + x[1] >= 20 ? x[0] / (x[0] + x[1]) : null;
+    return { L: acc(out.L), R: acc(out.R) };
+  }
+  function handCard() {
+    const hs = handStats();
+    const weaker = hs.L != null && hs.R != null ? (hs.L < hs.R ? 'L' : 'R') : null;
+    const pct = (a) => a == null ? '–' : Math.round(a * 1000) / 10 + '%';
+    const btn = (hand, label) => h('button', { class: 'btn small ' + (weaker === hand ? 'primary' : 'ghost'), type: 'button', onclick: () => startDrill(hand === 'L' ? 'left' : 'right') }, icon('play'), label);
+    return h('div', { class: 'panel drill hand-card' },
+      h('h3', null, 'Train one hand'),
+      h('div', { class: 'drill-body' },
+        hs.L == null && hs.R == null ? h('span', { class: 'muted small' }, 'Words you type with only one hand.') :
+          h('span', { class: 'small muted' }, 'Correct keys: left ' + pct(hs.L) + ' · right ' + pct(hs.R) + (weaker ? '. Your ' + (weaker === 'L' ? 'left' : 'right') + ' hand needs more practice.' : ''))),
+      h('div', { class: 'cta-row' }, btn('L', 'Left hand'), btn('R', 'Right hand')));
   }
 
   function drillCard(title, body, act) {
@@ -1140,13 +1166,24 @@
     } else if (kind === 'known') {
       text = TT.makeDrill(dictionary(), learned, [], 18);
       title = 'Words with keys you know';
+    } else if (kind === 'left' || kind === 'right') {
+      // Letters that this hand types on the current layout.
+      const hand = kind === 'left' ? 'L' : 'R';
+      const handSet = new Set([' ']);
+      'abcdefghijklmnopqrstuvwxyz'.split('').forEach(c => { const t = TT.keyFor(App.layout, c); if (t && TT.FINGERS[t.finger].hand === hand) handSet.add(c); });
+      const pool = Array.from(new Set(dictionary().concat(TT.HAND_WORDS))).filter(w => w.length > 1 && w.split('').every(c => handSet.has(c)));
+      const known = new Set([...handSet].filter(c => learned.has(c)));
+      const usable = pool.filter(w => w.split('').every(c => known.has(c)));
+      const focus = weakKeys(8).map(k => k.c.toLowerCase()).filter(c => handSet.has(c));
+      text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, 18);
+      title = (kind === 'left' ? 'Left' : 'Right') + ' hand only';
     } else {
       text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], 18);
       title = 'Common English words';
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({
-      kind: 'drill', title, sub: 'Random words', text, lang: 'en', target: targetFor(20),
+      kind: 'drill', title, sub: kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20),
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         recordSession('drill', kind, title, st);

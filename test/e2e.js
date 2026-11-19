@@ -253,6 +253,19 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.goto(FILE + '#progress'); await page.waitForSelector('.heat-panel');
     ok(await page.$$eval('.heat-panel .key.heat', e => e.length) > 0, 'heatmap colors practiced keys');
     ok(await page.$$eval('.weak tbody tr', e => e.length) === 2, 'weakest keys table has L and S');
+    // one-hand training: S was missed more (left hand), so left is suggested
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.hand-card');
+    const handTxt = await page.textContent('.hand-card');
+    const weakHand = (handTxt.match(/Your (left|right) hand needs more practice/) || [])[1];
+    ok(weakHand === 'right', 'hand card names the weaker hand (more misses on L than S): ' + handTxt.replace(/\s+/g, ' '));
+    await page.click('.hand-card .btn.primary'); await page.waitForSelector('.tt-inner');
+    const rightText = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(/^[yuiophjklnm ]+$/.test(rightText) && rightText.length > 20, 'right-hand drill uses only right-hand letters: ' + rightText);
+    await page.click('.ty-head .back'); await page.waitForSelector('.hand-card');
+    await page.click('.hand-card .btn >> text=Left hand'); await page.waitForSelector('.tt-inner');
+    const leftText = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(/^[qwertasdfgzxcvb ]+$/.test(leftText) && leftText.length > 20, 'left-hand drill uses only left-hand letters: ' + leftText);
+    await shot(page, '14-left-hand');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
