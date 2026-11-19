@@ -351,7 +351,7 @@
   }
 
   // ───────────────────────── Shell ─────────────────────────
-  const NAV = [['learn', 'Learn'], ['practice', 'Practice'], ['coach', 'Coach'], ['progress', 'Progress'], ['options', 'Options']];
+  const NAV = [['learn', 'Learn'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
   function renderShell() {
     const app = document.getElementById('app');
     app.textContent = '';
@@ -438,7 +438,7 @@
     const r = route();
     App.view = r.view;
     App.keyHandler = null;
-    setActiveNav(r.view === 'lesson' ? 'learn' : r.view);
+    setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view);
     const view = document.getElementById('view');
     view.textContent = '';
     view.className = 'view view-' + r.view;
@@ -496,10 +496,9 @@
       cont = h('div', { class: 'panel continue' },
         h('div', null, h('p', { class: 'eyebrow-free muted' }, 'Course finished'),
           h('h2', null, 'You finished all 26 lessons.'),
-          h('p', null, 'Keep your speed up with your own texts, or ask the coach for feedback on new requests.')),
+          h('p', null, 'Keep your speed up with your own texts and the quick drills in Practice.')),
         h('div', { class: 'cta-row' },
-          h('a', { class: 'btn primary', href: '#practice' }, 'Practice my texts'),
-          h('a', { class: 'btn ghost', href: '#coach' }, 'Open the coach')));
+          h('a', { class: 'btn primary', href: '#practice' }, 'Practice my texts')));
     } else {
       const l = COURSE[ni], info = lessonInfo(l);
       cont = h('div', { class: 'panel continue' },
@@ -1297,6 +1296,8 @@
 
   function renderCoach(view) {
     const wrap = h('div', { class: 'wrap coach' });
+    const ci = COURSE.findIndex(l => l.coach);
+    wrap.append(h('a', { class: 'back', href: '#lesson-' + (ci + 1) }, icon('back'), 'Lesson ' + (ci + 1)));
     wrap.append(h('header', { class: 'page-head' },
       h('h1', { class: 'display' }, 'Writing coach'),
       h('p', { class: 'lede' }, 'Write a request to Claude in your own words. Get corrections for your English and tips for a clearer request. Then type the better version.')));
@@ -1454,7 +1455,7 @@
     const lesson = COURSE.find(l => l.coach);
     Typing.start({
       kind: 'coach', title, sub: 'Writing coach', text, lang: 'en', target: targetFor(lesson ? lesson.wpm : 22),
-      back: { label: 'Coach', href: '#coach' },
+      back: { label: 'Writing coach', href: '#coach' },
       complete(st, stars) {
         recordSession('coach', 'coach', title, st);
         let lessonDone = null;

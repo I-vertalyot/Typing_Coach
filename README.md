@@ -11,7 +11,7 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 - **Keyboard layouts.** English (US), English (UK), Czech (QWERTZ), Czech (QWERTY) and German (QWERTZ). If the selected layout doesn't match what your keyboard actually types, the app offers to switch.
 - **Two ways to handle mistakes.** "Stop until the right key", or "continue and fix with Backspace".
 - **Your own texts.** Paste a text or open a `.txt` file. Long texts are split into parts, and the app remembers where you stopped. Smart quotes and dashes become keyboard characters.
-- **Writing coach.** Claude corrects your request (removals crossed out, additions in blue), explains each mistake, rates how clear the request is and suggests a better version. Then you type it.
+- **Writing coach** (in lesson 26). Claude corrects your request (removals crossed out, additions in blue), explains each mistake, rates how clear the request is and suggests a better version. Then you type it.
 - **Practice texts from Claude** on any topic and level (A2–C1).
 - **Progress.** Speed and accuracy charts, minutes per day against a daily goal, mistakes by key on a keyboard heatmap, and drills for your weak keys.
 - **Sign-in and sync.** You sign in with your Claude account; there is no extra password. Progress syncs across your devices. Without sign-in, it is saved in the browser.
