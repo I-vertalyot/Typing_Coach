@@ -343,9 +343,12 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
     await page.clock.install();
-    await page.goto(FILE + '#practice'); await page.waitForSelector('.length-pick');
-    await page.click('.length-pick .chip >> text=1 min');
-    ok((await page.textContent('.length-pick .chip.on')) === '1 min', 'length 1 min selected');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.len-btn');
+    ok(await page.isHidden('.len-pop'), 'length menu starts closed');
+    await page.click('.len-btn');
+    ok(await page.isVisible('.len-pop'), 'length button opens the menu');
+    await page.click('.len-opt >> text=1 min');
+    ok((await page.textContent('.len-btn')).includes('1 min') && await page.isHidden('.len-pop'), 'choosing 1 min updates the button and closes the menu');
     await page.click('.drill:has-text("Common English words") button'); await page.waitForSelector('.tt-inner');
     ok((await page.textContent('.stat >> nth=2')).startsWith('1:00'), 'countdown starts at 1:00');
     const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));

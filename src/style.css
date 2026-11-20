@@ -537,4 +537,15 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 
 /* Practice length */
 .drills-head { flex-wrap: wrap; }
-.length-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.length-wrap { position: relative; justify-self: start; }
+.len-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; }
+.len-btn strong { font-weight: 650; }
+.len-btn .caret { font-size: 11px; margin-left: 4px; color: var(--ink-2); }
+.len-btn[aria-expanded="true"] { border-color: var(--ink-3); }
+.len-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 170px; padding: 6px; display: grid; gap: 2px;
+  background: var(--sheet); border: 1px solid var(--rule); border-radius: 12px; box-shadow: var(--shadow); }
+.len-pop.left { left: 0; right: auto; }
+.len-opt { display: flex; align-items: center; gap: 8px; text-align: left; background: transparent; border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 15px; }
+.len-opt:hover, .len-opt:focus-visible { background: color-mix(in oklab, var(--rule) 45%, var(--sheet)); outline: none; }
+.len-opt.on { font-weight: 650; }
+.len-check { width: 14px; color: var(--good); font-weight: 700; }

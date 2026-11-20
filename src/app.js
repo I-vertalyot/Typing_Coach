@@ -1304,7 +1304,7 @@
       h('div', { class: 'kb-wrap' }, kb.el),
       h('div', { class: 'field' }, h('label', { for: 'pick-input' }, 'Your keys'), input),
       h('div', { class: 'row-inline' }, radio('only', 'Only these keys'), radio('focus', 'Real words with these keys')),
-      lengthPicker(), info, startBtn));
+      lengthPicker('left'), info, startBtn));
     view.append(wrap);
     update();
   }
@@ -1498,13 +1498,40 @@
 
   // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
   const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
-  function lengthPicker() {
+  // One button that opens a small menu with the length choices.
+  function lengthPicker(align) {
     const S = App.state.settings;
     const cur = Number(S.drillTime) || 0;
-    return h('div', { class: 'length-pick', role: 'group', 'aria-label': 'Practice length' },
-      h('span', { class: 'small muted' }, 'Length:'),
-      DRILL_TIMES.map(([v, label]) => h('button', { type: 'button', class: 'chip' + (cur === v ? ' on' : ''), 'aria-pressed': cur === v ? 'true' : 'false',
-        onclick: () => { S.drillTime = v; App.state.settingsAt = Date.now(); saveState(); render(); } }, label)));
+    const curLabel = (DRILL_TIMES.find(d => d[0] === cur) || DRILL_TIMES[0])[1];
+    const popId = 'len-pop-' + (align || 'right');
+    const btn = h('button', { type: 'button', class: 'chip len-btn', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': popId },
+      h('span', { class: 'muted' }, 'Length: '), h('strong', null, curLabel), h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
+    const opts = DRILL_TIMES.map(([v, label]) => h('button', { type: 'button', class: 'len-opt' + (cur === v ? ' on' : ''), role: 'option', 'aria-selected': cur === v ? 'true' : 'false',
+      onclick: () => { close(); S.drillTime = v; App.state.settingsAt = Date.now(); saveState(); render(); } },
+      h('span', { class: 'len-check', 'aria-hidden': 'true' }, cur === v ? '✓' : ''), label));
+    const pop = h('div', { class: 'len-pop' + (align === 'left' ? ' left' : ''), id: popId, role: 'listbox', 'aria-label': 'Practice length', hidden: true }, opts);
+    const wrapEl = h('div', { class: 'length-wrap' }, btn, pop);
+    function open() {
+      pop.hidden = false; btn.setAttribute('aria-expanded', 'true');
+      (opts.find(o => o.classList.contains('on')) || opts[0]).focus();
+      // The click that opened the menu has already passed the document, so this listener only sees later clicks.
+      document.addEventListener('click', outside, true);
+    }
+    function close(focusBtn) {
+      pop.hidden = true; btn.setAttribute('aria-expanded', 'false');
+      document.removeEventListener('click', outside, true);
+      if (focusBtn) btn.focus();
+    }
+    function outside(e) { if (!wrapEl.contains(e.target)) close(); }
+    btn.addEventListener('click', () => (pop.hidden ? open() : close()));
+    pop.addEventListener('keydown', (e) => {
+      const i = opts.indexOf(document.activeElement);
+      if (e.key === 'Escape') { e.preventDefault(); close(true); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); opts[(i + 1) % opts.length].focus(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); opts[(i - 1 + opts.length) % opts.length].focus(); }
+      else if (e.key === 'Tab') close();
+    });
+    return wrapEl;
   }
 
   function startDrill(kind) {
