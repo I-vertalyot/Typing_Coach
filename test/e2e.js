@@ -339,6 +339,29 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n8. Timed practice');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.clock.install();
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.length-pick');
+    await page.click('.length-pick .chip >> text=1 min');
+    ok((await page.textContent('.length-pick .chip.on')) === '1 min', 'length 1 min selected');
+    await page.click('.drill:has-text("Common English words") button'); await page.waitForSelector('.tt-inner');
+    ok((await page.textContent('.stat >> nth=2')).startsWith('1:00'), 'countdown starts at 1:00');
+    const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(t.length > 300, 'enough text for one minute: ' + t.length + ' chars');
+    await page.keyboard.type(t.slice(0, 20));
+    await page.clock.runFor(30000);
+    ok((await page.textContent('.stat >> nth=2')).startsWith('0:30'), 'countdown shows 0:30 after 30 s');
+    await page.clock.runFor(31000);
+    await page.waitForSelector('.result:not([hidden])', { timeout: 3000 });
+    ok((await page.textContent('.result')).includes('Time is up!'), 'drill ends when time is up');
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    ok(st.settings.drillTime === 60 && st.history[st.history.length - 1].d === 60, 'length saved in settings, session lasts 60 s');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

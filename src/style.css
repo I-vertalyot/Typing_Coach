@@ -531,3 +531,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .tt-text.one-line { padding: 6px 0; }
 
 .tt-text.flash-err .ch.cur::before { background: var(--bad); width: 4px; animation: none; }
+
+/* Practice length */
+.drills-head { flex-wrap: wrap; }
+.length-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

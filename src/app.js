@@ -708,6 +708,7 @@
     stop() {
       this.active = false;
       clearInterval(this.timer);
+      clearTimeout(this.endTimer);
       App.keyHandler = null;
       if (P.tts && P.tts.stop) { try { P.tts.stop(); } catch (e) { /* ignore */ } }
     }
@@ -745,12 +746,12 @@
     });
     const oneLine = (S.textView || 'line') === 'line';
     const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
-    const statW = h('strong', null, '–'), statA = h('strong', null, '100%'), statT = h('strong', null, '0:00');
+    const statW = h('strong', null, '–'), statA = h('strong', null, '100%'), statT = h('strong', null, sess.timeLimit ? fmtClock(sess.timeLimit * 1000) : '0:00');
     const bar = h('span');
     const stats = h('div', { class: 'tt-stats' },
       h('span', { class: 'stat' }, statW, h('span', null, 'words per minute')),
       h('span', { class: 'stat' }, statA, h('span', null, 'accuracy')),
-      h('span', { class: 'stat' }, statT, h('span', null, 'time')),
+      h('span', { class: 'stat' }, statT, h('span', null, sess.timeLimit ? 'left' : 'time')),
       h('span', { class: 'tt-prog', 'aria-hidden': 'true' }, bar));
     const box = h('div', { class: 'tt-box' }, textEl, stats);
 
@@ -806,8 +807,12 @@
       } else hint.append('Next: ', TT.keycap(ch));
       scrollLine();
     }
+    // Timed drills (sess.timeLimit, seconds) use the real clock from the first key.
+    const limit = sess.timeLimit ? sess.timeLimit * 1000 : 0;
+    let finalMs = 0;
     function curMs() {
       if (!start) return 0;
+      if (limit) return done ? finalMs : Math.min(limit, performance.now() - start);
       return active + (done ? 0 : Math.min(performance.now() - last, 3000));
     }
     function correctCount() {
@@ -822,14 +827,17 @@
       // Speed is noise for the first few keys, so wait for a fair sample.
       statW.textContent = start && (final || ms >= 4000 || (pos >= 6 && ms >= 1500)) ? fmtWpm(w) : '–';
       statA.textContent = fmtAcc(acc);
-      statT.textContent = fmtClock(ms);
-      bar.style.width = Math.round(pos / chars.length * 100) + '%';
+      statT.textContent = limit ? fmtClock(Math.max(0, limit - ms)) : fmtClock(ms);
+      bar.style.width = (limit ? Math.round(ms / limit * 100) : Math.round(pos / chars.length * 100)) + '%';
     }
 
     function input(ch, code) {
       if (done) return;
       const now = performance.now();
-      if (!start) { start = now; last = now; }
+      if (!start) {
+        start = now; last = now;
+        if (limit) { clearTimeout(Typing.endTimer); Typing.endTimer = setTimeout(() => { if (!done) finish(true); }, limit); }
+      }
       else { active += Math.min(now - last, 3000); last = now; }
       const expected = chars[pos];
       strokes++;
@@ -870,15 +878,18 @@
     function restart() {
       Typing.start(sess);
     }
-    function finish() {
+    function finish(timeUp) {
+      const ms0 = limit ? (timeUp ? limit : Math.min(limit, performance.now() - start)) : 0;
       done = true;
+      finalMs = ms0;
       clearInterval(Typing.timer);
+      clearTimeout(Typing.endTimer);
       spans.forEach(sp => sp.classList.remove('cur'));
       if (kb) kb.highlight(null);
       if (hands) hands.set([]);
       hint.textContent = '';
-      const ms = Math.max(active, 1000);
-      const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: chars.length, hits, misses, errors, strokes };
+      const ms = limit ? Math.max(ms0, 1000) : Math.max(active, 1000);
+      const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: limit ? pos : chars.length, hits, misses, errors, strokes, timeUp: !!timeUp };
       const stars = TT.stars(st.acc, st.wpm, sess.target || 20);
       const out = sess.complete(st, stars) || {};
       tw.classList.add('is-done');
@@ -888,6 +899,7 @@
     function showResult(st, stars, out) {
       result.textContent = '';
       const titles = ['Almost! You need 90% accuracy for a star.', 'Good. Now aim for more accuracy.', 'Well done!', 'Excellent!'];
+      if (st.timeUp) out.message = 'Time is up! You typed ' + Math.round(correctCount() / 5) + ' words in ' + fmtClock(st.ms) + '.';
       const missList = Object.keys(misses).sort((a, b) => misses[b] - misses[a]).slice(0, 6);
       const primary = out.primary || { label: 'Again', act: restart };
       const secondary = out.secondary || null;
@@ -963,7 +975,7 @@
     touch.hidden = !matchMedia('(hover: none) and (pointer: coarse)').matches;
     requestAnimationFrame(() => { measure(); paintCursor(); updateStats(); try { textEl.focus({ preventScroll: true }); } catch (e) { /* ignore */ } });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measure(); lastTop = -1; scrollLine(); });
-    Typing.timer = setInterval(() => { if (start && !done) updateStats(); }, 500);
+    Typing.timer = setInterval(() => { if (start && !done) updateStats(); }, 250);
   }
 
   function speak(text, lang) {
@@ -1215,7 +1227,8 @@
 
   // ───────────────────────── Choose keys ─────────────────────────
   // Drill text from the picked keys. "only": every character is a picked key. "focus": real words that contain them.
-  function pickDrill() {
+  function pickDrill(count) {
+    count = count || 18;
     const S = App.state.settings;
     const picked = new Set(Array.from(S.pickKeys || ''));
     if (!picked.size) return '';
@@ -1224,7 +1237,7 @@
     const words = Array.from(new Set(dictionary().concat(TT.HAND_WORDS))).filter(w => w.length > 1);
     if (S.pickMode === 'focus') {
       const pool = words.filter(w => [...w].some(c => picked.has(c)));
-      let t = TT.makeDrill(pool.length >= 5 ? pool : words, TT.allowedChars(COURSE, 12), letters, 18);
+      let t = TT.makeDrill(pool.length >= 5 ? pool : words, TT.allowedChars(COURSE, 12), letters, count);
       if (other.length) t = t.split(' ').map((w, i) => i % 3 === 2 ? w + other[i % other.length] : w).join(' ');
       return t;
     }
@@ -1235,7 +1248,7 @@
     const group = () => { let g = ''; const n = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) g += rnd(keys); return g; };
     const out = [];
     // Real words when there are enough; otherwise key groups like "fjf jfk".
-    for (let i = 0; i < 18; i++) out.push(pool.length >= 6 && Math.random() < 0.75 ? rnd(pool) : group());
+    for (let i = 0; i < count; i++) out.push(pool.length >= 6 && Math.random() < 0.75 ? rnd(pool) : group());
     return out.join(' ');
   }
 
@@ -1291,7 +1304,7 @@
       h('div', { class: 'kb-wrap' }, kb.el),
       h('div', { class: 'field' }, h('label', { for: 'pick-input' }, 'Your keys'), input),
       h('div', { class: 'row-inline' }, radio('only', 'Only these keys'), radio('focus', 'Real words with these keys')),
-      info, startBtn));
+      lengthPicker(), info, startBtn));
     view.append(wrap);
     update();
   }
@@ -1317,7 +1330,7 @@
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
-    wrap.append(sectionHead('Quick drills'), drills);
+    wrap.append(h('div', { class: 'sec-head row drills-head' }, h('h2', null, 'Quick drills'), lengthPicker()), drills);
 
     // my texts
     const list = Object.values(App.texts).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -1483,18 +1496,31 @@
     });
   }
 
+  // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
+  const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
+  function lengthPicker() {
+    const S = App.state.settings;
+    const cur = Number(S.drillTime) || 0;
+    return h('div', { class: 'length-pick', role: 'group', 'aria-label': 'Practice length' },
+      h('span', { class: 'small muted' }, 'Length:'),
+      DRILL_TIMES.map(([v, label]) => h('button', { type: 'button', class: 'chip' + (cur === v ? ' on' : ''), 'aria-pressed': cur === v ? 'true' : 'false',
+        onclick: () => { S.drillTime = v; App.state.settingsAt = Date.now(); saveState(); render(); } }, label)));
+  }
+
   function startDrill(kind) {
+    const secs = Number(App.state.settings.drillTime) || 0;
+    const N = secs ? Math.ceil(secs / 60 * 90) + 10 : 18;
     const learned = TT.allowedChars(COURSE, learnedIndex());
     let text, title;
     if (kind === 'weak') {
       const weak = weakKeys(5).map(k => k.c.toLowerCase());
-      text = TT.makeDrill(dictionary(), learned, weak, 16);
+      text = TT.makeDrill(dictionary(), learned, weak, secs ? N : 16);
       title = 'Weak keys: ' + weak.join(' ').toUpperCase();
     } else if (kind === 'known') {
-      text = TT.makeDrill(dictionary(), learned, [], 18);
+      text = TT.makeDrill(dictionary(), learned, [], N);
       title = 'Words with keys you know';
     } else if (kind === 'pick') {
-      text = pickDrill();
+      text = pickDrill(N);
       title = 'Your keys: ' + Array.from(App.state.settings.pickKeys).join(' ').toUpperCase();
     } else if (kind === 'left' || kind === 'right') {
       // Letters that this hand types on the current layout.
@@ -1505,15 +1531,15 @@
       const known = new Set([...handSet].filter(c => learned.has(c)));
       const usable = pool.filter(w => w.split('').every(c => known.has(c)));
       const focus = weakKeys(8).map(k => k.c.toLowerCase()).filter(c => handSet.has(c));
-      text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, 18);
+      text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, N);
       title = (kind === 'left' ? 'Left' : 'Right') + ' hand only';
     } else {
-      text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], 18);
+      text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], N);
       title = 'Common English words';
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({
-      kind: 'drill', title, sub: kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20),
+      kind: 'drill', title, sub: secs ? DRILL_TIMES.find(d => d[0] === secs)[1] + ' practice' : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         recordSession('drill', kind, title, st);
