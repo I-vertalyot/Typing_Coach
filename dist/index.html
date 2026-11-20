@@ -307,9 +307,12 @@ label { font-weight: 600; font-size: 14px; }
 .tt-box.shake { animation: shake .22s; }
 @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 .tt-text:focus-visible { outline: none; }
+.tt-text.font-mono { font-family: var(--font-mono); font-variation-settings: "MONO" 1, "CASL" 0; font-weight: 440; letter-spacing: 0; word-spacing: 0; }
 .tt-text {
   --tt: 28px;
-  font-family: var(--font-mono); font-variation-settings: "MONO" 1, "CASL" 0; font-weight: 440;
+  /* Sans-serif for easy reading (Recursive Sans); a little extra space between words makes spaces easy to see. */
+  font-family: var(--font-ui); font-variation-settings: "MONO" 0, "CASL" 0; font-weight: 450;
+  letter-spacing: .01em; word-spacing: .12em;
   font-size: var(--tt); line-height: 1.7; max-height: calc(3 * 1.7em); overflow: hidden; position: relative;
   outline: none;
 }
@@ -1349,7 +1352,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   TT.defaultState = function () {
     return {
       v: 1,
-      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0 },
+      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0, typeFont: 'sans' },
       settingsAt: 0,
       lessons: {},       // lessonId → { ex: { i: {s, w, a} } }
       history: [],       // { id, t, k, r, title, w, a, c, d }
@@ -2676,7 +2679,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       return sp;
     });
     const oneLine = (S.textView || 'line') === 'line';
-    const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
+    const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : '') + (S.typeFont === 'mono' ? ' font-mono' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
     const statW = h('strong', null, '–'), statA = h('strong', null, '100%'), statT = h('strong', null, sess.timeLimit ? fmtClock(sess.timeLimit * 1000) : '0:00');
     const bar = h('span');
     const stats = h('div', { class: 'tt-stats' },
@@ -3894,6 +3897,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
         h('p', { class: 'opt-q' }, 'Show'),
         check('showKb', 'On-screen keyboard'),
         check('showHands', 'Hands with the finger to use'),
+        h('p', { class: 'opt-q' }, 'Typing font'),
+        h('div', { class: 'row-inline' }, [['sans', 'Sans-serif (easy to read)'], ['mono', 'Monospace (every letter the same width)']].map(([v, l]) => radio('font', v, l, S.typeFont || 'sans', x => set('typeFont', x)))),
         h('p', { class: 'opt-q' }, 'Text view'),
         h('div', { class: 'row-inline' }, [['line', 'One moving line'], ['box', 'Whole text in a box']].map(([v, l]) => radio('view', v, l, S.textView || 'line', x => set('textView', x)))),
         h('p', { class: 'opt-q' }, 'Text size'),

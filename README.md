@@ -9,7 +9,7 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 - **26 lessons.** Part 1, *Keyboard basics* (lessons 1–13), teaches the keys from the home row to numbers. The drills use only keys you have already learned. Part 2, *Writing with Claude* (lessons 14–26), uses whole sentences. Each lesson there teaches one writing skill and one prompting skill, with before-and-after examples.
 - **Finger guide.** An on-screen keyboard colored by finger, hands that show the finger for the next key, and a Shift hint for capital letters.
 - **Keyboard layouts.** English (US), English (UK), Czech (QWERTZ), Czech (QWERTY) and German (QWERTZ). If the selected layout doesn't match what your keyboard actually types, the app offers to switch.
-- **One moving line.** The text runs past a fixed cursor, like a ticker. You can switch to the whole text in a box in Options.
+- **One moving line.** The text runs past a fixed cursor, like a ticker. You can switch to the whole text in a box in Options. The typing text is sans-serif for easy reading; monospace is an option.
 - **Two ways to handle mistakes.** "Stop until the right key", or "continue and fix with Backspace".
 - **Your own texts.** Paste a text or open a `.txt` file. Long texts are split into parts, and the app remembers where you stopped. Smart quotes and dashes become keyboard characters.
 - **Writing coach** (in lesson 26). Claude corrects your request (removals crossed out, additions in blue), explains each mistake, rates how clear the request is and suggests a better version. Then you type it.

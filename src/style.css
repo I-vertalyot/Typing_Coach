@@ -296,9 +296,12 @@ label { font-weight: 600; font-size: 14px; }
 .tt-box.shake { animation: shake .22s; }
 @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 .tt-text:focus-visible { outline: none; }
+.tt-text.font-mono { font-family: var(--font-mono); font-variation-settings: "MONO" 1, "CASL" 0; font-weight: 440; letter-spacing: 0; word-spacing: 0; }
 .tt-text {
   --tt: 28px;
-  font-family: var(--font-mono); font-variation-settings: "MONO" 1, "CASL" 0; font-weight: 440;
+  /* Sans-serif for easy reading (Recursive Sans); a little extra space between words makes spaces easy to see. */
+  font-family: var(--font-ui); font-variation-settings: "MONO" 0, "CASL" 0; font-weight: 450;
+  letter-spacing: .01em; word-spacing: .12em;
   font-size: var(--tt); line-height: 1.7; max-height: calc(3 * 1.7em); overflow: hidden; position: relative;
   outline: none;
 }

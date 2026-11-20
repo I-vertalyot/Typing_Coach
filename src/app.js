@@ -745,7 +745,7 @@
       return sp;
     });
     const oneLine = (S.textView || 'line') === 'line';
-    const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
+    const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : '') + (S.typeFont === 'mono' ? ' font-mono' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
     const statW = h('strong', null, '–'), statA = h('strong', null, '100%'), statT = h('strong', null, sess.timeLimit ? fmtClock(sess.timeLimit * 1000) : '0:00');
     const bar = h('span');
     const stats = h('div', { class: 'tt-stats' },
@@ -1963,6 +1963,8 @@
         h('p', { class: 'opt-q' }, 'Show'),
         check('showKb', 'On-screen keyboard'),
         check('showHands', 'Hands with the finger to use'),
+        h('p', { class: 'opt-q' }, 'Typing font'),
+        h('div', { class: 'row-inline' }, [['sans', 'Sans-serif (easy to read)'], ['mono', 'Monospace (every letter the same width)']].map(([v, l]) => radio('font', v, l, S.typeFont || 'sans', x => set('typeFont', x)))),
         h('p', { class: 'opt-q' }, 'Text view'),
         h('div', { class: 'row-inline' }, [['line', 'One moving line'], ['box', 'Whole text in a box']].map(([v, l]) => radio('view', v, l, S.textView || 'line', x => set('textView', x)))),
         h('p', { class: 'opt-q' }, 'Text size'),
