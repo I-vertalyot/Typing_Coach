@@ -535,8 +535,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 /* One moving line: no wrapping, the text slides left, typed text fades out at the left edge. */
 .tt-text.one-line { max-height: 1.7em; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 92%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 92%, transparent 100%); }
 .tt-text.one-line .tt-inner { white-space: pre; overflow-wrap: normal; width: max-content; transition: none; will-change: transform; z-index: 1; }
-/* The typed half has its own background; the cursor sits on the border. */
-.tt-text.one-line::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 50%; background: color-mix(in oklab, var(--f-ring) 9%, var(--sheet)); border-right: 2px solid color-mix(in oklab, var(--f-ring) 35%, var(--rule)); }
+/* The half still to type has its own background; the cursor sits on its left border. */
+.tt-text.one-line::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; right: 0; background: color-mix(in oklab, var(--f-ring) 9%, var(--sheet)); border-left: 2px solid color-mix(in oklab, var(--f-ring) 35%, var(--rule)); }
 .tt-text.one-line .ch.done { color: var(--ink-3); opacity: .5; }
 .tt-text.one-line .ch.done.slip { opacity: .75; }
 .tt-text.one-line { padding: 6px 0; }
