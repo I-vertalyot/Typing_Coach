@@ -308,6 +308,37 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n7. Choose keys');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await page.click('.drill:has-text("Choose keys") button'); await page.waitForSelector('.pick-panel');
+    for (const code of ['KeyQ', 'KeyU', 'KeyI', 'KeyT']) await page.click(`.pick-panel .key[data-code="${code}"]`);
+    ok(await page.inputValue('#pick-input') === 'quit', 'clicked keys appear in the box: ' + await page.inputValue('#pick-input'));
+    ok(await page.$$eval('.pick-panel .key.picked', e => e.length) === 4, 'clicked keys are marked');
+    await page.click('.pick-panel .key[data-code="KeyT"]');
+    ok(await page.inputValue('#pick-input') === 'qui', 'clicking again removes a key');
+    await page.fill('#pick-input', 'asdfjkl');
+    ok((await page.textContent('.pick-panel')).includes('real words use only these keys'), 'shows how many real words fit');
+    await shot(page, '16-choose-keys');
+    await page.click('.pick-panel .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t1 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(/^[asdfjkl ]+$/.test(t1), '"Only these keys" uses only the chosen keys: ' + t1);
+    await typeExercise(page);
+    ok(await page.isVisible('.result:not([hidden])'), 'drill can be finished');
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    await page.click('.drill:has-text("Choose keys") button'); await page.waitForSelector('.pick-panel');
+    ok(await page.inputValue('#pick-input') === 'asdfjkl', 'choice is remembered');
+    await page.fill('#pick-input', 'zx');
+    await page.check('#pick-focus');
+    await page.click('.pick-panel .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    const words = t2.split(' ');
+    ok(words.length > 10 && words.every(w => /[zx]/.test(w)), '"Real words" mode: every word has Z or X: ' + t2);
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

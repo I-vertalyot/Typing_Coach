@@ -429,7 +429,7 @@
     const hash = (location.hash || '').replace('#', '');
     const m = hash.match(/^lesson-(\d+)$/);
     if (m) return { view: 'lesson', idx: Math.min(COURSE.length, Math.max(1, +m[1])) - 1 };
-    if (['practice', 'coach', 'progress', 'options', 'steno'].includes(hash)) return { view: hash };
+    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys'].includes(hash)) return { view: hash };
     return { view: 'learn' };
   }
   function render() {
@@ -438,7 +438,7 @@
     const r = route();
     App.view = r.view;
     App.keyHandler = null;
-    setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view === 'steno' ? 'practice' : r.view);
+    setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view === 'steno' || r.view === 'keys' ? 'practice' : r.view);
     App.keyUpHandler = null;
     const view = document.getElementById('view');
     view.textContent = '';
@@ -450,6 +450,7 @@
     else if (r.view === 'progress') renderProgress(view);
     else if (r.view === 'options') renderOptions(view);
     else if (r.view === 'steno') renderSteno(view);
+    else if (r.view === 'keys') renderPickKeys(view);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
   // A link to the page we are already on (for example from the typing screen) still re-renders it.
@@ -1202,6 +1203,89 @@
     show();
   }
 
+  // ───────────────────────── Choose keys ─────────────────────────
+  // Drill text from the picked keys. "only": every character is a picked key. "focus": real words that contain them.
+  function pickDrill() {
+    const S = App.state.settings;
+    const picked = new Set(Array.from(S.pickKeys || ''));
+    if (!picked.size) return '';
+    const letters = [...picked].filter(c => /[a-z]/.test(c));
+    const other = [...picked].filter(c => !/[a-z]/.test(c));
+    const words = Array.from(new Set(dictionary().concat(TT.HAND_WORDS))).filter(w => w.length > 1);
+    if (S.pickMode === 'focus') {
+      const pool = words.filter(w => [...w].some(c => picked.has(c)));
+      let t = TT.makeDrill(pool.length >= 5 ? pool : words, TT.allowedChars(COURSE, 12), letters, 18);
+      if (other.length) t = t.split(' ').map((w, i) => i % 3 === 2 ? w + other[i % other.length] : w).join(' ');
+      return t;
+    }
+    const allowed = new Set([' ', ...picked]);
+    const pool = words.filter(w => [...w].every(c => allowed.has(c)));
+    const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+    const keys = [...picked];
+    const group = () => { let g = ''; const n = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < n; i++) g += rnd(keys); return g; };
+    const out = [];
+    // Real words when there are enough; otherwise key groups like "fjf jfk".
+    for (let i = 0; i < 18; i++) out.push(pool.length >= 6 && Math.random() < 0.75 ? rnd(pool) : group());
+    return out.join(' ');
+  }
+
+  function renderPickKeys(view) {
+    const S = App.state.settings;
+    const save = () => { App.state.settingsAt = Date.now(); saveState(); };
+    const picked = new Set(Array.from(S.pickKeys || ''));
+    const wrap = h('div', { class: 'wrap pick' });
+    wrap.append(h('a', { class: 'back', href: '#practice' }, icon('back'), 'Practice'));
+    wrap.append(h('header', { class: 'page-head' }, h('h1', { class: 'display' }, 'Choose keys'),
+      h('p', { class: 'lede' }, 'Click the keys you want to practice, or type them in the box. Then start.')));
+    const input = h('input', { id: 'pick-input', class: 'input', type: 'text', maxlength: '40', autocomplete: 'off', spellcheck: 'false', value: [...picked].join(''), placeholder: 'For example: qzxp' });
+    const startBtn = h('button', { class: 'btn primary big', type: 'button' }, icon('play'), 'Start');
+    const info = h('p', { class: 'small muted' });
+    let kb;
+    const update = () => {
+      S.pickKeys = [...picked].join('');
+      input.value = S.pickKeys;
+      kb.setPicked(picked);
+      startBtn.disabled = !picked.size;
+      const words = Array.from(new Set(dictionary().concat(TT.HAND_WORDS))).filter(w => w.length > 1 && [...w].every(c => picked.has(c)));
+      info.textContent = !picked.size ? 'No keys chosen yet.' : S.pickMode === 'only'
+        ? (words.length >= 6 ? words.length + ' real words use only these keys, for example: ' + words.slice(0, 5).join(', ') + '.' : 'Few real words use only these keys, so you will mostly type key groups like “' + [...picked].slice(0, 3).join('') + '”.')
+        : 'You will type real words that contain these keys.';
+    };
+    kb = TT.Keyboard({ layout: App.layout, onKey: (code) => {
+      const m = App.layout.map[code];
+      const ch = m && m[0];
+      if (!ch || (ch[0] === '~' && ch.length > 1)) return;
+      if (picked.has(ch)) picked.delete(ch); else picked.add(ch);
+      update(); save();
+    } });
+    input.addEventListener('input', () => {
+      picked.clear();
+      for (const c of input.value.toLowerCase()) if (c !== ' ' && App.layout.charToKey[c]) picked.add(c);
+      update(); save();
+    });
+    const radio = (v, label) => {
+      const r = h('input', { type: 'radio', name: 'pickmode', id: 'pick-' + v, checked: S.pickMode === v });
+      r.addEventListener('change', () => { if (r.checked) { S.pickMode = v; update(); save(); } });
+      return h('label', { class: 'radio', for: 'pick-' + v }, r, h('span', null, label));
+    };
+    const quick = (label, chars) => h('button', { class: 'chip', type: 'button', onclick: () => { picked.clear(); [...chars].forEach(c => picked.add(c)); update(); save(); } }, label);
+    const weak = weakKeys(6).map(k => k.c.toLowerCase()).filter(c => c !== ' ');
+    startBtn.addEventListener('click', () => startDrill('pick'));
+    wrap.append(h('section', { class: 'panel pick-panel' },
+      h('div', { class: 'ideas' }, h('span', { class: 'small muted' }, 'Quick choice:'),
+        quick('Home row', 'asdfghjkl'), quick('Top row', 'qwertyuiop'.replace(App.layout.id === 'cz' || App.layout.id === 'de' ? 'y' : '@', 'z')), quick('Bottom row', App.layout.id === 'cz' || App.layout.id === 'de' ? 'yxcvbnm' : 'zxcvbnm'),
+        quick('Left hand', [...'abcdefghijklmnopqrstuvwxyz'].filter(c => { const t = TT.keyFor(App.layout, c); return t && TT.FINGERS[t.finger].hand === 'L'; }).join('')),
+        quick('Right hand', [...'abcdefghijklmnopqrstuvwxyz'].filter(c => { const t = TT.keyFor(App.layout, c); return t && TT.FINGERS[t.finger].hand === 'R'; }).join('')),
+        weak.length ? quick('My weak keys', weak.join('')) : null,
+        h('button', { class: 'chip', type: 'button', onclick: () => { picked.clear(); update(); save(); } }, 'Clear')),
+      h('div', { class: 'kb-wrap' }, kb.el),
+      h('div', { class: 'field' }, h('label', { for: 'pick-input' }, 'Your keys'), input),
+      h('div', { class: 'row-inline' }, radio('only', 'Only these keys'), radio('focus', 'Real words with these keys')),
+      info, startBtn));
+    view.append(wrap);
+    update();
+  }
+
   // ───────────────────────── Practice ─────────────────────────
   const Gen = { topic: '', level: 'B1', len: 'medium', busy: false, result: null, error: '', ctl: null };
   let editing = null; // { id?, title, body }
@@ -1221,6 +1305,7 @@
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
       handCard(),
+      drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
     wrap.append(sectionHead('Quick drills'), drills);
 
@@ -1398,6 +1483,9 @@
     } else if (kind === 'known') {
       text = TT.makeDrill(dictionary(), learned, [], 18);
       title = 'Words with keys you know';
+    } else if (kind === 'pick') {
+      text = pickDrill();
+      title = 'Your keys: ' + Array.from(App.state.settings.pickKeys).join(' ').toUpperCase();
     } else if (kind === 'left' || kind === 'right') {
       // Letters that this hand types on the current layout.
       const hand = kind === 'left' ? 'L' : 'R';

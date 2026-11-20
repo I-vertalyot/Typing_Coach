@@ -512,3 +512,11 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .st-feedback.ok { color: var(--good); }
 .st-feedback.bad { color: var(--bad); }
 .steno-drill .kb-area { gap: 14px; }
+
+/* ── Choose keys ── */
+.pick-panel { display: grid; gap: 14px; margin-top: 10px; }
+.pick-panel > .btn { justify-self: start; }
+.key.pickable { cursor: pointer; }
+.key.pickable:hover { filter: brightness(.95); }
+.key.picked { background: var(--zc); color: var(--zi); border-color: color-mix(in oklab, var(--zc) 60%, #000); box-shadow: 0 0 0 .4cqw color-mix(in oklab, var(--zc) 30%, transparent); }
+#pick-input { max-width: 360px; font-family: var(--font-mono); font-variation-settings: "MONO" 1; letter-spacing: .15em; }

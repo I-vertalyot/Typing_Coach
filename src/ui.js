@@ -127,6 +127,7 @@
             }
           }
           if (k.bump) el.append(h('span', { class: 'bump' }));
+          if (opts.onKey && k.sp == null) { el.classList.add('pickable'); el.addEventListener('click', () => opts.onKey(k.c)); }
           (byCode[k.c] = byCode[k.c] || []).push(el);
           if (k.c === 'Enter' || k.c === 'EnterTop') (byCode.Enter = byCode.Enter || []).includes(el) || byCode.Enter.push(el);
           r.append(el);
@@ -142,6 +143,14 @@
     const api = {
       el: root,
       setLayout(lay) { build(lay); },
+      // mark keys whose base character is in the set
+      setPicked(set) {
+        Object.keys(byCode).forEach(code => {
+          const m = layout.map[code];
+          const base = m && m[0] && !(m[0][0] === '~' && m[0].length > 1) ? m[0] : null;
+          byCode[code].forEach(el => el.classList.toggle('picked', !!base && set.has(base)));
+        });
+      },
       highlight(target) {
         clear();
         if (!target) return;
