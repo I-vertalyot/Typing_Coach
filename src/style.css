@@ -549,3 +549,5 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .len-opt:hover, .len-opt:focus-visible { background: color-mix(in oklab, var(--rule) 45%, var(--sheet)); outline: none; }
 .len-opt.on { font-weight: 650; }
 .len-check { width: 14px; color: var(--good); font-weight: 700; }
+
+.common-body { display: grid; gap: 8px; justify-items: start; }

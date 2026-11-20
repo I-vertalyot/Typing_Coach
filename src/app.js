@@ -76,7 +76,7 @@
   let dictCache = null;
   function dictionary() {
     if (dictCache) return dictCache;
-    const set = new Set(TT.WORDS);
+    const set = new Set(TT.WORDS.concat(TT.COMMON));
     // Real words only: skip the pure key drills (first exercises of part 1) and letter runs like "sss".
     COURSE.forEach((l, li) => l.ex.forEach((e, ei) => {
       if (l.part === 1 && (ei === 0 || (li === 0 && ei < 3))) return;
@@ -1326,7 +1326,7 @@
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
         weak.length ? () => startDrill('weak') : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
-      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
+      drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
@@ -1498,18 +1498,16 @@
 
   // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
   const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
-  // One button that opens a small menu with the length choices.
-  function lengthPicker(align) {
-    const S = App.state.settings;
-    const cur = Number(S.drillTime) || 0;
-    const curLabel = (DRILL_TIMES.find(d => d[0] === cur) || DRILL_TIMES[0])[1];
-    const popId = 'len-pop-' + (align || 'right');
+  // A button that opens a small menu of choices (used for practice length and word count).
+  function menuButton({ id, label, options, value, onPick, align }) {
+    const curLabel = (options.find(o => o[0] === value) || options[0])[1];
+    const popId = 'menu-pop-' + id;
     const btn = h('button', { type: 'button', class: 'chip len-btn', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': popId },
-      h('span', { class: 'muted' }, 'Length: '), h('strong', null, curLabel), h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
-    const opts = DRILL_TIMES.map(([v, label]) => h('button', { type: 'button', class: 'len-opt' + (cur === v ? ' on' : ''), role: 'option', 'aria-selected': cur === v ? 'true' : 'false',
-      onclick: () => { close(); S.drillTime = v; App.state.settingsAt = Date.now(); saveState(); render(); } },
-      h('span', { class: 'len-check', 'aria-hidden': 'true' }, cur === v ? '✓' : ''), label));
-    const pop = h('div', { class: 'len-pop' + (align === 'left' ? ' left' : ''), id: popId, role: 'listbox', 'aria-label': 'Practice length', hidden: true }, opts);
+      h('span', { class: 'muted' }, label + ': '), h('strong', null, curLabel), h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
+    const opts = options.map(([v, text]) => h('button', { type: 'button', class: 'len-opt' + (value === v ? ' on' : ''), role: 'option', 'aria-selected': value === v ? 'true' : 'false',
+      onclick: () => { close(); onPick(v); } },
+      h('span', { class: 'len-check', 'aria-hidden': 'true' }, value === v ? '✓' : ''), text));
+    const pop = h('div', { class: 'len-pop' + (align === 'left' ? ' left' : ''), id: popId, role: 'listbox', 'aria-label': label, hidden: true }, opts);
     const wrapEl = h('div', { class: 'length-wrap' }, btn, pop);
     function open() {
       pop.hidden = false; btn.setAttribute('aria-expanded', 'true');
@@ -1532,6 +1530,15 @@
       else if (e.key === 'Tab') close();
     });
     return wrapEl;
+  }
+  const setSetting = (k, v) => { App.state.settings[k] = v; App.state.settingsAt = Date.now(); saveState(); render(); };
+  function lengthPicker(align) {
+    return menuButton({ id: 'length-' + (align || 'right'), label: 'Length', options: DRILL_TIMES, value: Number(App.state.settings.drillTime) || 0, align, onPick: v => setSetting('drillTime', v) });
+  }
+  const COMMON_COUNTS = [50, 100, 200, 500, 1000];
+  const commonCount = () => COMMON_COUNTS.includes(Number(App.state.settings.commonCount)) ? Number(App.state.settings.commonCount) : 200;
+  function commonPicker() {
+    return menuButton({ id: 'common', label: 'Words', options: COMMON_COUNTS.map(n => [n, 'Top ' + n]), value: commonCount(), align: 'left', onPick: v => setSetting('commonCount', v) });
   }
 
   function startDrill(kind) {
@@ -1561,8 +1568,9 @@
       text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, N);
       title = (kind === 'left' ? 'Left' : 'Right') + ' hand only';
     } else {
-      text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], N);
-      title = 'Common English words';
+      const n = commonCount();
+      text = TT.makeDrill(TT.COMMON.slice(0, n), TT.allowedChars(COURSE, 12), [], N);
+      title = 'Common English words (top ' + n + ')';
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({

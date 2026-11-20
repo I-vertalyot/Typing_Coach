@@ -343,13 +343,13 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
     await page.clock.install();
-    await page.goto(FILE + '#practice'); await page.waitForSelector('.len-btn');
-    ok(await page.isHidden('.len-pop'), 'length menu starts closed');
-    await page.click('.len-btn');
-    ok(await page.isVisible('.len-pop'), 'length button opens the menu');
-    await page.click('.len-opt >> text=1 min');
-    ok((await page.textContent('.len-btn')).includes('1 min') && await page.isHidden('.len-pop'), 'choosing 1 min updates the button and closes the menu');
-    await page.click('.drill:has-text("Common English words") button'); await page.waitForSelector('.tt-inner');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills-head .len-btn');
+    ok(await page.isHidden('#menu-pop-length-right'), 'length menu starts closed');
+    await page.click('.drills-head .len-btn');
+    ok(await page.isVisible('#menu-pop-length-right'), 'length button opens the menu');
+    await page.click('#menu-pop-length-right .len-opt >> text=1 min');
+    ok((await page.textContent('.drills-head .len-btn')).includes('1 min') && await page.isHidden('#menu-pop-length-right'), 'choosing 1 min updates the button and closes the menu');
+    await page.click('.drill:has-text("Common English words") > button'); await page.waitForSelector('.tt-inner');
     ok((await page.textContent('.stat >> nth=2')).startsWith('1:00'), 'countdown starts at 1:00');
     const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
     ok(t.length > 300, 'enough text for one minute: ' + t.length + ' chars');
@@ -361,6 +361,33 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     ok((await page.textContent('.result')).includes('Time is up!'), 'drill ends when time is up');
     const st = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
     ok(st.settings.drillTime === 60 && st.history[st.history.length - 1].d === 60, 'length saved in settings, session lasts 60 s');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('\n9. Common words: how many');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    const card = '.drill:has-text("Common English words")';
+    ok((await page.textContent(card)).includes('The 200 most common words'), 'default is the top 200');
+    await page.click(card + ' .len-btn');
+    await page.click('#menu-pop-common .len-opt >> text=Top 50');
+    ok((await page.textContent(card)).includes('The 50 most common words'), 'top 50 chosen');
+    await page.click(card + ' > button'); await page.waitForSelector('.tt-inner');
+    ok((await page.textContent('.ty-title')).includes('top 50'), 'drill title names the top 50');
+    const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    const top50 = await page.evaluate(() => TT.COMMON.slice(0, 50));
+    ok(text.split(' ').every(w => top50.includes(w)), 'every word is from the top 50: ' + text);
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    await page.click(card + ' .len-btn');
+    await page.click('#menu-pop-common .len-opt >> text=Top 1000');
+    await page.click(card + ' > button'); await page.waitForSelector('.tt-inner');
+    const t2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    const top1000 = await page.evaluate(() => TT.COMMON);
+    ok(t2.split(' ').every(w => top1000.includes(w)), 'top 1000 drill uses the 1000-word list');
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    ok(st.settings.commonCount === 1000, 'choice is saved');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }

@@ -561,6 +561,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .len-opt.on { font-weight: 650; }
 .len-check { width: 14px; color: var(--good); font-weight: 700; }
 
+.common-body { display: grid; gap: 8px; justify-items: start; }
+
 </style>
 </head>
 <body>
@@ -1022,6 +1024,64 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     'you him hip hook hop hum ill inn ink join joy jump kill kiln kin lily link lion lip lump mill milk mink mom monk moon mop my no noon nook nun oil oily on onion only opinion pill pink plum plump poll polo pony pool pop pull pump puppy union yolk yummy hilly holly hymn kimono lollipop million minimum monopoly nylon phony pinky pupil ion lookup unhook polio poppy mommy hippo lumpy pulp hull hill look loop mono nil pin pun hook'
   ).split(' ').filter(Boolean);
 
+  // The 1000 most common English words, most common first (approximate frequency order).
+  TT.COMMON = (
+    'the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will ' +
+    'my one all would there their what so up out if about who get which go me when make can like time no just him know take ' +
+    'people into year your good some could them see other than then now look only come its over think also back after use ' +
+    'two how our work first well way even new want because any these give day most us is are was were been has had did said ' +
+    'very here more need many much where should through down still find long great little life hand part place week case ' +
+    'point number problem fact right last few same able early young important high different small large next big thing ' +
+    'those both each such while home house since school never under might again too off city around another however always ' +
+    'family side water room mother area money story month lot book job word business friend father hour game line end ' +
+    'member law car night name head really something nothing child children eye woman women man men world country company ' +
+    'group question government system program state service student office door health person art history party result ' +
+    'change morning reason research girl guy moment air teacher education foot boy age policy everything process music ' +
+    'market sense nation plan college interest experience effect class control care field development role effort rate ' +
+    'heart show leader light voice wife mind price report decision son view relationship town road arm difference value ' +
+    'building action model season society tax director position player record paper space ground form event official matter ' +
+    'center couple site project activity star table court ask tell feel become leave put mean keep let begin seem help talk ' +
+    'turn start hear play run move live believe hold bring happen write provide sit stand lose pay meet include continue ' +
+    'set learn lead understand watch follow stop create speak read allow add spend grow open walk win offer remember love ' +
+    'consider appear buy wait serve send expect build stay fall cut reach remain suggest raise pass sell require decide ' +
+    'pull return explain hope develop carry break receive agree support hit produce eat cover catch draw choose cause ' +
+    'listen realize close involve increase thank own old public bad best better sure free real full special easy clear ' +
+    'recent certain personal red difficult available likely short single medical current wrong private past foreign fine ' +
+    'common poor natural significant similar hot central happy serious ready simple left physical general environmental ' +
+    'financial blue democratic dark various entire legal religious cold final main green nice huge popular traditional ' +
+    'cultural wide sometimes often away yet once perhaps already almost enough far later quite together usually probably ' +
+    'actually maybe rather especially either simply soon finally quickly recently nearly certainly instead else clearly ' +
+    'ever exactly before between during without within along against among across behind toward above below upon until ' +
+    'anything someone anyone everyone nobody somebody everybody things today tomorrow yesterday tonight evening weekend ' +
+    'minute second three four five six seven eight nine ten hundred thousand million third half parent brother sister ' +
+    'daughter husband baby kid doctor worker customer manager neighbor food bread milk coffee tea fruit apple egg meat fish ' +
+    'rice dinner lunch breakfast meal kitchen chair bed window wall floor garden street village bus train plane bike ticket ' +
+    'station airport hotel shop store bank hospital church park library museum restaurant cafe cost bill card cash meeting ' +
+    'email letter phone message computer internet website page file photo picture video song film movie news face ear nose ' +
+    'mouth hair leg finger body color white black yellow brown gray orange pink weather sun rain snow wind cloud warm cool ' +
+    'spring summer autumn winter sky sea river lake mountain tree flower grass animal dog cat bird horse sad angry tired ' +
+    'hungry busy afraid sorry glad kind funny friendly quiet loud fast slow hard soft heavy cheap expensive rich clean ' +
+    'dirty beautiful pretty ugly strong weak sick healthy answer idea example mistake method goal step test exam lesson ' +
+    'course practice exercise grammar sentence language meaning please thanks hello goodbye yes okay welcome cook wash ' +
+    'drive ride fly swim sing dance paint travel visit wear sleep wake rest study teach fix check try finish forget miss ' +
+    'enjoy prefer wish hate worry laugh cry smile afternoon late ago admit stage quarter talent future print mouse ' +
+    'character circle respect sofa ahead debate liquid holiday lay wild size tent plate square product usual text soap ' +
+    'transfer corner secure winner lonely extra slice dress hardly wealth universe potato staff cup tall stomach wool ' +
+    'purpose pot quote yard replace urban dozen sort sugar band recipe contact soup sign delay distance forward artist ' +
+    'discover gift approach dear bell range storm sum condition island west seed truck advice beat fashion gold gain block ' +
+    'perfect middle attempt depend pool lawyer lift thin quality solution cousin earn stone network sound charge average ' +
+    'negative slide shine lazy skill favorite select ordinary vote useful boss dry pair fair prove front detail string near ' +
+    'gas target stress feeling topic act divide upset design inside noise score beside math tip movement survey captain ' +
+    'modern ice dream announce dialog fresh shift highly soccer queen raw double section fear feature wire success hall ' +
+    'farm arrive gather luck pan grand rise budget onto save signal present version attention shelf strange describe split ' +
+    'deal wing forest list electric pet basket reward promise pack burn motor sink trust bowl aware argue forever push ' +
+    'upper inch south clothes guide traffic pen content judge fold adult level tool suit worth notice safe compare chance ' +
+    'collect curious concern source rely bottom fuel normal pencil courage coast author faith thick stick knock silver roof ' +
+    'series east drop except beer object guest phrase separate surface partner row image complete technology editor article ' +
+    'careful confirm pants lane sheet beach possible local route piece perform pilot speed manage warn novel journey settle ' +
+    'shirt industry mystery'
+  ).split(' ');
+
   // Common English words for random drills (lowercase).
   TT.WORDS = ('the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us is are was were been has had did said very here more need help write read learn word words question answer example simple short long clear idea ideas text email please thank thanks problem change start finish try ask tell show find keep let mean each many much why where still every again before between same different important right wrong easy hard next last little own part place number sentence letter page list line point step fact case kind week today tomorrow yesterday always never often sometimes usually maybe really sure great better best small big old young high low open close call send check fix explain describe compare summarize translate improve correct rewrite suggest create plan review lesson finger fingers keyboard type typing grammar meaning shorter simpler friendly formal polite context format tone level').split(' ');
 })(globalThis.TT = globalThis.TT || {});
@@ -1363,7 +1423,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   TT.defaultState = function () {
     return {
       v: 1,
-      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0, typeFont: 'sans' },
+      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0, typeFont: 'sans', commonCount: 200 },
       settingsAt: 0,
       lessons: {},       // lessonId → { ex: { i: {s, w, a} } }
       history: [],       // { id, t, k, r, title, w, a, c, d }
@@ -2021,7 +2081,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   let dictCache = null;
   function dictionary() {
     if (dictCache) return dictCache;
-    const set = new Set(TT.WORDS);
+    const set = new Set(TT.WORDS.concat(TT.COMMON));
     // Real words only: skip the pure key drills (first exercises of part 1) and letter runs like "sss".
     COURSE.forEach((l, li) => l.ex.forEach((e, ei) => {
       if (l.part === 1 && (ei === 0 || (li === 0 && ei < 3))) return;
@@ -3271,7 +3331,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
         weak.length ? () => startDrill('weak') : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
-      drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
+      drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
@@ -3443,18 +3503,16 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 
   // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
   const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
-  // One button that opens a small menu with the length choices.
-  function lengthPicker(align) {
-    const S = App.state.settings;
-    const cur = Number(S.drillTime) || 0;
-    const curLabel = (DRILL_TIMES.find(d => d[0] === cur) || DRILL_TIMES[0])[1];
-    const popId = 'len-pop-' + (align || 'right');
+  // A button that opens a small menu of choices (used for practice length and word count).
+  function menuButton({ id, label, options, value, onPick, align }) {
+    const curLabel = (options.find(o => o[0] === value) || options[0])[1];
+    const popId = 'menu-pop-' + id;
     const btn = h('button', { type: 'button', class: 'chip len-btn', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-controls': popId },
-      h('span', { class: 'muted' }, 'Length: '), h('strong', null, curLabel), h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
-    const opts = DRILL_TIMES.map(([v, label]) => h('button', { type: 'button', class: 'len-opt' + (cur === v ? ' on' : ''), role: 'option', 'aria-selected': cur === v ? 'true' : 'false',
-      onclick: () => { close(); S.drillTime = v; App.state.settingsAt = Date.now(); saveState(); render(); } },
-      h('span', { class: 'len-check', 'aria-hidden': 'true' }, cur === v ? '✓' : ''), label));
-    const pop = h('div', { class: 'len-pop' + (align === 'left' ? ' left' : ''), id: popId, role: 'listbox', 'aria-label': 'Practice length', hidden: true }, opts);
+      h('span', { class: 'muted' }, label + ': '), h('strong', null, curLabel), h('span', { class: 'caret', 'aria-hidden': 'true' }, '▾'));
+    const opts = options.map(([v, text]) => h('button', { type: 'button', class: 'len-opt' + (value === v ? ' on' : ''), role: 'option', 'aria-selected': value === v ? 'true' : 'false',
+      onclick: () => { close(); onPick(v); } },
+      h('span', { class: 'len-check', 'aria-hidden': 'true' }, value === v ? '✓' : ''), text));
+    const pop = h('div', { class: 'len-pop' + (align === 'left' ? ' left' : ''), id: popId, role: 'listbox', 'aria-label': label, hidden: true }, opts);
     const wrapEl = h('div', { class: 'length-wrap' }, btn, pop);
     function open() {
       pop.hidden = false; btn.setAttribute('aria-expanded', 'true');
@@ -3477,6 +3535,15 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       else if (e.key === 'Tab') close();
     });
     return wrapEl;
+  }
+  const setSetting = (k, v) => { App.state.settings[k] = v; App.state.settingsAt = Date.now(); saveState(); render(); };
+  function lengthPicker(align) {
+    return menuButton({ id: 'length-' + (align || 'right'), label: 'Length', options: DRILL_TIMES, value: Number(App.state.settings.drillTime) || 0, align, onPick: v => setSetting('drillTime', v) });
+  }
+  const COMMON_COUNTS = [50, 100, 200, 500, 1000];
+  const commonCount = () => COMMON_COUNTS.includes(Number(App.state.settings.commonCount)) ? Number(App.state.settings.commonCount) : 200;
+  function commonPicker() {
+    return menuButton({ id: 'common', label: 'Words', options: COMMON_COUNTS.map(n => [n, 'Top ' + n]), value: commonCount(), align: 'left', onPick: v => setSetting('commonCount', v) });
   }
 
   function startDrill(kind) {
@@ -3506,8 +3573,9 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       text = TT.makeDrill(usable.length >= 10 ? usable : pool, handSet, focus, N);
       title = (kind === 'left' ? 'Left' : 'Right') + ' hand only';
     } else {
-      text = TT.makeDrill(TT.WORDS.slice(0, 200), TT.allowedChars(COURSE, 12), [], N);
-      title = 'Common English words';
+      const n = commonCount();
+      text = TT.makeDrill(TT.COMMON.slice(0, n), TT.allowedChars(COURSE, 12), [], N);
+      title = 'Common English words (top ' + n + ')';
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({

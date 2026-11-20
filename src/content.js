@@ -452,6 +452,64 @@
     'you him hip hook hop hum ill inn ink join joy jump kill kiln kin lily link lion lip lump mill milk mink mom monk moon mop my no noon nook nun oil oily on onion only opinion pill pink plum plump poll polo pony pool pop pull pump puppy union yolk yummy hilly holly hymn kimono lollipop million minimum monopoly nylon phony pinky pupil ion lookup unhook polio poppy mommy hippo lumpy pulp hull hill look loop mono nil pin pun hook'
   ).split(' ').filter(Boolean);
 
+  // The 1000 most common English words, most common first (approximate frequency order).
+  TT.COMMON = (
+    'the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will ' +
+    'my one all would there their what so up out if about who get which go me when make can like time no just him know take ' +
+    'people into year your good some could them see other than then now look only come its over think also back after use ' +
+    'two how our work first well way even new want because any these give day most us is are was were been has had did said ' +
+    'very here more need many much where should through down still find long great little life hand part place week case ' +
+    'point number problem fact right last few same able early young important high different small large next big thing ' +
+    'those both each such while home house since school never under might again too off city around another however always ' +
+    'family side water room mother area money story month lot book job word business friend father hour game line end ' +
+    'member law car night name head really something nothing child children eye woman women man men world country company ' +
+    'group question government system program state service student office door health person art history party result ' +
+    'change morning reason research girl guy moment air teacher education foot boy age policy everything process music ' +
+    'market sense nation plan college interest experience effect class control care field development role effort rate ' +
+    'heart show leader light voice wife mind price report decision son view relationship town road arm difference value ' +
+    'building action model season society tax director position player record paper space ground form event official matter ' +
+    'center couple site project activity star table court ask tell feel become leave put mean keep let begin seem help talk ' +
+    'turn start hear play run move live believe hold bring happen write provide sit stand lose pay meet include continue ' +
+    'set learn lead understand watch follow stop create speak read allow add spend grow open walk win offer remember love ' +
+    'consider appear buy wait serve send expect build stay fall cut reach remain suggest raise pass sell require decide ' +
+    'pull return explain hope develop carry break receive agree support hit produce eat cover catch draw choose cause ' +
+    'listen realize close involve increase thank own old public bad best better sure free real full special easy clear ' +
+    'recent certain personal red difficult available likely short single medical current wrong private past foreign fine ' +
+    'common poor natural significant similar hot central happy serious ready simple left physical general environmental ' +
+    'financial blue democratic dark various entire legal religious cold final main green nice huge popular traditional ' +
+    'cultural wide sometimes often away yet once perhaps already almost enough far later quite together usually probably ' +
+    'actually maybe rather especially either simply soon finally quickly recently nearly certainly instead else clearly ' +
+    'ever exactly before between during without within along against among across behind toward above below upon until ' +
+    'anything someone anyone everyone nobody somebody everybody things today tomorrow yesterday tonight evening weekend ' +
+    'minute second three four five six seven eight nine ten hundred thousand million third half parent brother sister ' +
+    'daughter husband baby kid doctor worker customer manager neighbor food bread milk coffee tea fruit apple egg meat fish ' +
+    'rice dinner lunch breakfast meal kitchen chair bed window wall floor garden street village bus train plane bike ticket ' +
+    'station airport hotel shop store bank hospital church park library museum restaurant cafe cost bill card cash meeting ' +
+    'email letter phone message computer internet website page file photo picture video song film movie news face ear nose ' +
+    'mouth hair leg finger body color white black yellow brown gray orange pink weather sun rain snow wind cloud warm cool ' +
+    'spring summer autumn winter sky sea river lake mountain tree flower grass animal dog cat bird horse sad angry tired ' +
+    'hungry busy afraid sorry glad kind funny friendly quiet loud fast slow hard soft heavy cheap expensive rich clean ' +
+    'dirty beautiful pretty ugly strong weak sick healthy answer idea example mistake method goal step test exam lesson ' +
+    'course practice exercise grammar sentence language meaning please thanks hello goodbye yes okay welcome cook wash ' +
+    'drive ride fly swim sing dance paint travel visit wear sleep wake rest study teach fix check try finish forget miss ' +
+    'enjoy prefer wish hate worry laugh cry smile afternoon late ago admit stage quarter talent future print mouse ' +
+    'character circle respect sofa ahead debate liquid holiday lay wild size tent plate square product usual text soap ' +
+    'transfer corner secure winner lonely extra slice dress hardly wealth universe potato staff cup tall stomach wool ' +
+    'purpose pot quote yard replace urban dozen sort sugar band recipe contact soup sign delay distance forward artist ' +
+    'discover gift approach dear bell range storm sum condition island west seed truck advice beat fashion gold gain block ' +
+    'perfect middle attempt depend pool lawyer lift thin quality solution cousin earn stone network sound charge average ' +
+    'negative slide shine lazy skill favorite select ordinary vote useful boss dry pair fair prove front detail string near ' +
+    'gas target stress feeling topic act divide upset design inside noise score beside math tip movement survey captain ' +
+    'modern ice dream announce dialog fresh shift highly soccer queen raw double section fear feature wire success hall ' +
+    'farm arrive gather luck pan grand rise budget onto save signal present version attention shelf strange describe split ' +
+    'deal wing forest list electric pet basket reward promise pack burn motor sink trust bowl aware argue forever push ' +
+    'upper inch south clothes guide traffic pen content judge fold adult level tool suit worth notice safe compare chance ' +
+    'collect curious concern source rely bottom fuel normal pencil courage coast author faith thick stick knock silver roof ' +
+    'series east drop except beer object guest phrase separate surface partner row image complete technology editor article ' +
+    'careful confirm pants lane sheet beach possible local route piece perform pilot speed manage warn novel journey settle ' +
+    'shirt industry mystery'
+  ).split(' ');
+
   // Common English words for random drills (lowercase).
   TT.WORDS = ('the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us is are was were been has had did said very here more need help write read learn word words question answer example simple short long clear idea ideas text email please thank thanks problem change start finish try ask tell show find keep let mean each many much why where still every again before between same different important right wrong easy hard next last little own part place number sentence letter page list line point step fact case kind week today tomorrow yesterday always never often sometimes usually maybe really sure great better best small big old young high low open close call send check fix explain describe compare summarize translate improve correct rewrite suggest create plan review lesson finger fingers keyboard type typing grammar meaning shorter simpler friendly formal polite context format tone level').split(' ');
 })(globalThis.TT = globalThis.TT || {});
