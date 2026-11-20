@@ -270,6 +270,44 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n6. Steno basics (chords)');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await page.click('.drill:has-text("Steno basics") button');
+    await page.waitForSelector('.steno-kb');
+    ok((await page.textContent('h1')).includes('Steno basics'), 'steno page opens from Practice');
+    await page.click('.steno-list .ex-btn >> nth=2'); // "Whole words in one chord"
+    await page.waitForSelector('.st-word');
+    // Plover keyboard mapping: steno key → QWERTY key
+    const MAP = { 'S': 'a', 'T': 'w', 'K': 's', 'P': 'e', 'W': 'd', 'H': 'r', 'R': 'f', 'A': 'c', 'O': 'v', '*': 't', 'E': 'n', 'U': 'm',
+      '-F': 'u', '-R': 'j', '-P': 'i', '-B': 'k', '-L': 'o', '-G': 'l', '-T': 'p', '-S': ';', '-D': '[', '-Z': "'" };
+    const keysFor = (stroke) => {
+      const keys = []; let right = false;
+      for (const ch of stroke) {
+        if (ch === '-') { right = true; continue; }
+        if ('AO*EU'.includes(ch)) { keys.push(MAP[ch]); right = 'EU*'.includes(ch) || ch === 'O' || ch === 'A' ? true : right; continue; }
+        keys.push(right ? MAP['-' + ch] : MAP[ch]);
+      }
+      return keys;
+    };
+    const chord = async (stroke) => { const ks = keysFor(stroke); for (const k of ks) await page.keyboard.down(k); await page.waitForTimeout(20); for (const k of ks) await page.keyboard.up(k); };
+    const first = await page.textContent('.st-target');
+    await chord('KAT' === first ? 'SAT' : 'KAT');
+    ok((await page.textContent('.st-feedback')).startsWith('You pressed'), 'a wrong chord is explained: ' + await page.textContent('.st-feedback'));
+    await shot(page, '15-steno');
+    for (let i = 0; i < 40; i++) {
+      if (await page.isVisible('.result:not([hidden])')) break;
+      await chord(await page.textContent('.st-target'));
+    }
+    ok(await page.isVisible('.result:not([hidden])'), 'all chords accepted, lesson finished');
+    ok(/[123] of 3 stars/.test(await page.$eval('.result .stars', e => e.getAttribute('aria-label'))), 'steno lesson earns stars');
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    ok(st.lessons['steno-3'] && st.lessons['steno-3'].ex[0].s >= 1, 'steno progress saved');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

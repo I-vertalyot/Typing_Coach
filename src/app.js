@@ -429,7 +429,7 @@
     const hash = (location.hash || '').replace('#', '');
     const m = hash.match(/^lesson-(\d+)$/);
     if (m) return { view: 'lesson', idx: Math.min(COURSE.length, Math.max(1, +m[1])) - 1 };
-    if (['practice', 'coach', 'progress', 'options'].includes(hash)) return { view: hash };
+    if (['practice', 'coach', 'progress', 'options', 'steno'].includes(hash)) return { view: hash };
     return { view: 'learn' };
   }
   function render() {
@@ -438,7 +438,8 @@
     const r = route();
     App.view = r.view;
     App.keyHandler = null;
-    setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view);
+    setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view === 'steno' ? 'practice' : r.view);
+    App.keyUpHandler = null;
     const view = document.getElementById('view');
     view.textContent = '';
     view.className = 'view view-' + r.view;
@@ -448,6 +449,7 @@
     else if (r.view === 'coach') renderCoach(view);
     else if (r.view === 'progress') renderProgress(view);
     else if (r.view === 'options') renderOptions(view);
+    else if (r.view === 'steno') renderSteno(view);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
   // A link to the page we are already on (for example from the typing screen) still re-renders it.
@@ -962,6 +964,12 @@
   }
 
   // Global keys go to the active view.
+  window.addEventListener('keyup', e => {
+    const dlg = document.getElementById('dialog-root');
+    if (dlg && !dlg.hidden) return;
+    if (e.target && e.target.closest && e.target.closest('input, textarea:not(.sink), select')) return;
+    if (App.keyUpHandler) App.keyUpHandler(e);
+  });
   window.addEventListener('keydown', e => {
     const dlg = document.getElementById('dialog-root');
     if (dlg && !dlg.hidden) return;
@@ -969,6 +977,230 @@
     if (t && t.closest && t.closest('input, textarea:not(.sink), select, [contenteditable="true"]')) return;
     if (App.keyHandler) App.keyHandler(e);
   });
+
+  // ───────────────────────── Steno basics (court reporters' machine shorthand) ─────────────────────────
+  // Plover's keyboard mapping: physical keys (event.code) → steno keys. Works on any layout.
+  const STENO_MAP = {
+    KeyQ: 'S-', KeyA: 'S-', KeyW: 'T-', KeyS: 'K-', KeyE: 'P-', KeyD: 'W-', KeyR: 'H-', KeyF: 'R-',
+    KeyT: '*', KeyY: '*', KeyG: '*', KeyH: '*', KeyC: 'A-', KeyV: 'O-', KeyN: '-E', KeyM: '-U',
+    KeyU: '-F', KeyJ: '-R', KeyI: '-P', KeyK: '-B', KeyO: '-L', KeyL: '-G', KeyP: '-T', Semicolon: '-S',
+    BracketLeft: '-D', Quote: '-Z',
+    Digit1: '#', Digit2: '#', Digit3: '#', Digit4: '#', Digit5: '#', Digit6: '#', Digit7: '#', Digit8: '#', Digit9: '#', Digit0: '#'
+  };
+  const STENO_ORDER = ['#', 'S-', 'T-', 'K-', 'P-', 'W-', 'H-', 'R-', 'A-', 'O-', '*', '-E', '-U', '-F', '-R', '-P', '-B', '-L', '-G', '-T', '-S', '-D', '-Z'];
+  const stenoLetter = (k) => k.replace('-', '');
+  // Set of steno keys → written stroke, e.g. {K-, A-, -T} → "KAT", {-T} → "-T".
+  function strokeString(keys) {
+    let left = '', mid = '', right = '';
+    STENO_ORDER.forEach(k => {
+      if (!keys.has(k)) return;
+      if (['A-', 'O-', '*', '-E', '-U'].includes(k)) mid += stenoLetter(k);
+      else if (k === '#' || k.endsWith('-')) left += stenoLetter(k);
+      else right += stenoLetter(k);
+    });
+    return left + mid + (right && !mid ? '-' : '') + right;
+  }
+  // Written stroke → set of steno keys.
+  function parseStroke(str) {
+    const set = new Set();
+    let i = 0;
+    for (const ch of str) {
+      if (ch === '-') { i = Math.max(i, STENO_ORDER.indexOf('-F')); continue; }
+      let j = i;
+      while (j < STENO_ORDER.length && stenoLetter(STENO_ORDER[j]) !== ch) j++;
+      if (j >= STENO_ORDER.length) return null;
+      set.add(STENO_ORDER[j]); i = j + 1;
+    }
+    return set;
+  }
+  TT.strokeString = strokeString; TT.parseStroke = parseStroke;
+
+  const STENO_LESSONS = [
+    { id: 'steno-1', title: 'The steno keys', info: 'One key per stroke. Press it, then let go. Read the key name: S, T, K... The dash shows the right hand: -F, -T.',
+      items: ['S', 'T', 'K', 'P', 'W', 'H', 'R', 'A', 'O', 'E', 'U', '*', '-F', '-R', '-P', '-B', '-L', '-G', '-T', '-S', '-D', '-Z'].map(s => [s, s]) },
+    { id: 'steno-2', title: 'One key, one word', info: 'The most common words need just one key. This is why court reporters are so fast.',
+      items: [['is', 'S'], ['it', 'T'], ['can', 'K'], ['with', 'W'], ['are', 'R'], ['the', '-T'], ['of', '-F'], ['be', '-B'], ['he', 'E'], ['you', 'U'], ['I', 'EU']] },
+    { id: 'steno-3', title: 'Whole words in one chord', info: 'Press all keys of a word at the same time: the start with the left hand, the vowel with a thumb, the end with the right hand.',
+      items: [['cat', 'KAT'], ['sat', 'SAT'], ['hat', 'HAT'], ['rat', 'RAT'], ['tap', 'TAP'], ['top', 'TOP'], ['set', 'SET'], ['red', 'RED'], ['stop', 'STOP'], ['sit', 'SEUT']] },
+    { id: 'steno-4', title: 'Letters from chords', info: 'The left hand has only 7 keys, so some letters are chords: D = TK, B = PW, L = HR, M = PH, F = TP, N = TPH, G = TKPW.',
+      items: [['dog', 'TKOG'], ['bed', 'PWED'], ['mat', 'PHAT'], ['lot', 'HROT'], ['fat', 'TPAT'], ['net', 'TPHET'], ['bat', 'PWAT'], ['got', 'TKPWOT']] },
+    { id: 'steno-5', title: 'Common short forms', info: 'Court reporters learn "briefs": short chords for very common words. These are from the Plover dictionary.',
+      items: [['and', 'SKP'], ['to', 'TO'], ['a', 'AEU'], ['in', 'TPH'], ['for', 'TP'], ['on', 'OPB'], ['that', 'THA'], ['was', 'WAS'], ['not', 'TPHOT'], ['but', 'PWU'], ['what', 'WHA'], ['have', 'SR'], ['this', 'TH'], ['we', 'WE'], ['they', 'THE']] }
+  ];
+  TT.STENO_LESSONS = STENO_LESSONS;
+
+  function stenoKeyboard() {
+    // Physical rows as on a steno machine: two rows of consonants, a thumb row, a number bar.
+    const rows = [
+      ['KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'BracketLeft'],
+      ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote'],
+      ['KeyC', 'KeyV', null, 'KeyN', 'KeyM']
+    ];
+    const byKey = {};
+    const root = h('div', { class: 'steno-kb', 'aria-hidden': 'true' });
+    const keyEl = (code) => {
+      const sk = STENO_MAP[code];
+      const m = App.layout.map[code];
+      const el = h('div', { class: 'sk' + (sk === '*' ? ' star' : '') + (['A-', 'O-', '-E', '-U'].includes(sk) ? ' vowel' : '') + (sk.startsWith('-') && sk.length > 1 && !['-E', '-U'].includes(sk) ? ' right' : '') },
+        h('span', { class: 'sk-name' }, stenoLetter(sk)), h('span', { class: 'sk-qw' }, m ? (m[1] && m[0].length === 1 && m[0].toUpperCase() === m[1] ? m[1] : m[0]) : ''));
+      (byKey[sk] = byKey[sk] || []).push(el);
+      return el;
+    };
+    root.append(h('div', { class: 'sk-row num' }, h('div', { class: 'sk num-bar' }, h('span', { class: 'sk-name' }, '#'), h('span', { class: 'sk-qw' }, 'number row'))));
+    (byKey['#'] = []).push(root.lastChild.firstChild);
+    rows.forEach((r, i) => root.append(h('div', { class: 'sk-row' + (i === 2 ? ' thumbs' : '') }, r.map(c => c ? keyEl(c) : h('div', { class: 'sk-gap' })))));
+    return {
+      el: root,
+      set(cls, keys) {
+        Object.values(byKey).flat().forEach(el => el.classList.remove(cls));
+        if (keys) keys.forEach(k => (byKey[k] || []).forEach(el => el.classList.add(cls)));
+      }
+    };
+  }
+
+  const Steno = { hints: true };
+  function renderSteno(view) {
+    const wrap = h('div', { class: 'wrap steno' });
+    wrap.append(h('a', { class: 'back', href: '#practice' }, icon('back'), 'Practice'));
+    wrap.append(h('header', { class: 'page-head' },
+      h('h1', { class: 'display' }, 'Steno basics'),
+      h('p', { class: 'lede' }, 'American court reporters write with a stenotype machine. They press several keys at the same time, like a chord on a piano, and one chord writes a whole word. Here your normal keyboard works like a steno machine, with the free Plover layout.')));
+    const kb = stenoKeyboard();
+    wrap.append(h('section', { class: 'panel steno-how' },
+      h('h3', null, 'How it works'),
+      h('ul', { class: 'tip-list' },
+        h('li', null, 'Press all keys of a chord together, then lift all fingers. The chord is written when every key is up.'),
+        h('li', null, 'Left fingers rest on the S T P H row and S K W R row, right fingers on F P L T D and R B G S Z. Thumbs: A O and E U.'),
+        h('li', null, 'Some keyboards can’t send many keys at the same time. If a chord loses keys, try another keyboard: you need one with "n-key rollover" (NKRO).')),
+      h('div', { class: 'kb-wrap' }, kb.el),
+      h('p', { class: 'small muted' }, 'Big letter: the steno key. Small letter: the key on your keyboard.')));
+    const list = h('ol', { class: 'ex-list steno-list' });
+    STENO_LESSONS.forEach((l, i) => {
+      const r = App.state.lessons[l.id] && App.state.lessons[l.id].ex[0];
+      list.append(h('li', { class: 'ex-item' + (r && r.s >= 1 ? ' done' : '') },
+        h('button', { type: 'button', class: 'ex-btn', onclick: () => startSteno(i) },
+          h('span', { class: 'ex-num' }, String(i + 1)),
+          h('span', { class: 'ex-text st-title' }, l.title),
+          h('span', { class: 'ex-stat' }, r ? TT.starRow(r.s, 3) : h('span', { class: 'muted small' }, 'Start')))));
+    });
+    wrap.append(h('section', { class: 'panel steno-lessons' }, h('h3', null, 'Lessons'), list));
+    wrap.append(h('section', { class: 'panel' }, h('h3', null, 'Learn more (free)'),
+      h('ul', { class: 'tip-list' },
+        h('li', null, h('a', { href: 'https://www.openstenoproject.org/plover/' }, 'Plover'), ': free software that makes your keyboard a steno machine everywhere on your computer.'),
+        h('li', null, h('a', { href: 'https://www.artofchording.com/' }, 'Art of Chording'), ' and Learn Plover!: free books that teach the whole steno theory.'),
+        h('li', null, h('a', { href: 'https://didoesdigital.com/typey-type/' }, 'Typey Type'), ': free steno practice with many lessons.'))));
+    view.append(wrap);
+  }
+
+  function startSteno(li, rounds) {
+    const L = STENO_LESSONS[li];
+    const view = document.getElementById('view');
+    if (Typing.active) Typing.stop();
+    App.view = 'steno-drill';
+    view.textContent = '';
+    view.className = 'view view-steno';
+    // 16 prompts: every item once, then random repeats.
+    const order = L.items.slice().sort(() => Math.random() - 0.5);
+    while (order.length < 16) order.push(L.items[Math.floor(Math.random() * L.items.length)]);
+    const prompts = order.slice(0, Math.max(16, L.items.length));
+    let idx = 0, strokes = 0, errors = 0, start = 0, last = 0, active = 0, done = false;
+    const down = new Set(), chord = new Set();
+    const kb = stenoKeyboard();
+    const word = h('p', { class: 'st-word' }), target = h('p', { class: 'st-target' }), feedback = h('p', { class: 'st-feedback', 'aria-live': 'polite' });
+    const count = h('span', { class: 'muted' });
+    const hintBox = h('input', { type: 'checkbox', id: 'st-hints', checked: Steno.hints });
+    hintBox.addEventListener('change', () => { Steno.hints = hintBox.checked; show(); });
+    const result = h('div', { class: 'result', hidden: true });
+    const tw = h('div', { class: 'wrap typing steno-drill' },
+      h('div', { class: 'ty-head' },
+        h('a', { class: 'back', href: '#steno' }, icon('back'), 'Steno basics'),
+        h('div', { class: 'ty-title' }, h('strong', null, L.title), count)),
+      h('p', { class: 'ty-note muted' }, L.info),
+      h('div', { class: 'tt-box st-box' }, word, target, feedback),
+      result,
+      h('div', { class: 'kb-area' }, kb.el,
+        h('label', { class: 'radio', for: 'st-hints' }, hintBox, h('span', null, 'Show the keys to press'))));
+    view.append(tw);
+    function show() {
+      const [w, st] = prompts[idx];
+      word.textContent = w;
+      target.textContent = Steno.hints ? st : '?';
+      kb.set('want', Steno.hints ? parseStroke(st) : null);
+      count.textContent = 'Word ' + (idx + 1) + ' of ' + prompts.length;
+    }
+    function stroke() {
+      if (done) return;
+      const now = performance.now();
+      if (!start) { start = now; last = now; } else { active += Math.min(now - last, 4000); last = now; }
+      const got = strokeString(chord);
+      const [w, st] = prompts[idx];
+      strokes++;
+      chord.clear();
+      if (got === strokeString(parseStroke(st))) {
+        feedback.textContent = '✓ ' + got + ' = ' + w;
+        feedback.className = 'st-feedback ok';
+        idx++;
+        if (idx >= prompts.length) return finish();
+        show();
+      } else {
+        errors++;
+        feedback.textContent = 'You pressed ' + (got || '?') + '. For “' + w + '” press ' + st + '.';
+        feedback.className = 'st-feedback bad';
+        if (S().sound !== 'off') TT.Sound.error();
+        kb.set('want', parseStroke(st));
+      }
+    }
+    const S = () => App.state.settings;
+    function finish() {
+      done = true;
+      kb.set('want', null); kb.set('down', null);
+      const ms = Math.max(active, 1000);
+      const wpm = prompts.length / (ms / 60000);
+      const acc = (strokes - errors) / strokes * 100;
+      const stars = TT.stars(acc, wpm, 15);
+      const rec = App.state.lessons[L.id] = App.state.lessons[L.id] || { ex: {} };
+      const prev = rec.ex[0] || { s: 0, w: 0, a: 0 };
+      rec.ex[0] = { s: Math.max(prev.s, stars), w: Math.max(prev.w, round1(wpm)), a: Math.max(prev.a, round1(acc)) };
+      recordSession('steno', L.id, 'Steno: ' + L.title, { wpm, acc, ms, chars: prompts.length, hits: {}, misses: {} });
+      result.textContent = '';
+      const next = li < STENO_LESSONS.length - 1 && stars >= 1;
+      add(result,
+        h('div', { class: 'res-top' },
+          h('div', null, h('h2', null, ['Almost! You need 90% correct chords.', 'Good. Now aim for fewer mistakes.', 'Well done!', 'Excellent!'][stars]), TT.starRow(stars, 3)),
+          h('div', { class: 'res-nums' },
+            h('span', { class: 'rn' }, h('strong', null, String(Math.round(wpm))), h('span', null, 'words per minute')),
+            h('span', { class: 'rn' }, h('strong', null, fmtAcc(acc)), h('span', null, 'correct chords')),
+            h('span', { class: 'rn' }, h('strong', null, fmtClock(ms)), h('span', null, 'time')))),
+        h('p', { class: 'small muted' }, '3 stars: 97% correct chords and 15 words per minute.'),
+        h('div', { class: 'res-actions' },
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => startSteno(li) }, icon('retry'), 'Try again', h('span', { class: 'kbd-hint' }, 'Esc')),
+          h('button', { class: 'btn primary', type: 'button', onclick: () => next ? startSteno(li + 1) : (location.hash = '#steno', render()) }, next ? 'Next lesson' : 'Back to Steno basics', h('span', { class: 'kbd-hint' }, 'Enter'))));
+      result.hidden = false;
+      App.resultKeys = { enter: () => next ? startSteno(li + 1) : (location.hash = '#steno', render()), esc: () => startSteno(li) };
+    }
+    App.keyHandler = (e) => {
+      if (done) {
+        if (e.key === 'Enter') { e.preventDefault(); App.resultKeys.enter(); }
+        else if (e.key === 'Escape') { e.preventDefault(); App.resultKeys.esc(); }
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const sk = STENO_MAP[e.code];
+      if (!sk) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      down.add(e.code); chord.add(sk);
+      kb.set('down', chord);
+    };
+    App.keyUpHandler = (e) => {
+      if (done || !STENO_MAP[e.code]) return;
+      e.preventDefault();
+      down.delete(e.code);
+      if (!down.size && chord.size) { stroke(); kb.set('down', null); }
+    };
+    window.addEventListener('blur', () => { down.clear(); chord.clear(); kb.set('down', null); }, { once: true });
+    show();
+  }
 
   // ───────────────────────── Practice ─────────────────────────
   const Gen = { topic: '', level: 'B1', len: 'medium', busy: false, result: null, error: '', ctl: null };
@@ -988,7 +1220,8 @@
         weak.length ? () => startDrill('weak') : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('span', { class: 'muted small' }, 'The 200 most useful words'), () => startDrill('common')),
-      handCard());
+      handCard(),
+      drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
     wrap.append(sectionHead('Quick drills'), drills);
 
     // my texts

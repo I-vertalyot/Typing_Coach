@@ -483,3 +483,32 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ── Steno ── */
+.steno-how { display: grid; gap: 12px; margin-top: 10px; }
+.steno-lessons, .steno .panel + .panel { margin-top: 16px; }
+.steno-lessons { display: grid; gap: 10px; }
+.st-title { font-family: var(--font-ui); font-variation-settings: "MONO" 0; font-size: 15px; color: var(--ink); }
+.steno-kb { container-type: inline-size; width: 100%; max-width: 760px; margin: 0 auto; background: var(--kb-bed); border: 1px solid var(--rule); border-radius: 16px; padding: 10px; display: grid; gap: 1cqw; user-select: none; }
+.sk-row { display: grid; grid-template-columns: repeat(11, 1fr); gap: 1cqw; }
+.sk-row.thumbs { grid-template-columns: repeat(5, 1fr); width: 46%; margin: 0 auto; }
+.sk-row.num { grid-template-columns: 1fr; }
+.sk { position: relative; height: 7.4cqw; border-radius: 1.2cqw; background: var(--key); border: 1px solid var(--key-edge); border-bottom-width: .4cqw; display: grid; place-items: center; color: var(--key-ink); }
+.sk.num-bar { height: 4.5cqw; background: var(--key-dim); }
+.sk.vowel { background: color-mix(in oklab, var(--f-thumb) 25%, var(--key)); }
+.sk.star { background: color-mix(in oklab, var(--f-rindex) 12%, var(--key)); }
+.sk.right { background: color-mix(in oklab, var(--f-ring) 10%, var(--key)); }
+.sk-name { font-weight: 750; font-size: max(13px, 2.9cqw); }
+.sk-qw { position: absolute; right: 8%; bottom: 6%; font-size: max(9px, 1.5cqw); color: var(--ink-3); }
+.num-bar .sk-qw { right: 2%; }
+.sk-gap { visibility: hidden; }
+.sk.want { background: var(--mark); color: var(--mark-ink); border-color: color-mix(in oklab, var(--mark) 50%, #000); box-shadow: 0 0 0 .5cqw color-mix(in oklab, var(--mark) 40%, transparent); }
+.sk.down { background: var(--ink); color: var(--paper); }
+.sk.down .sk-qw { color: var(--paper); opacity: .7; }
+.st-box { text-align: center; display: grid; gap: 4px; padding: 26px; }
+.st-word { font-size: 44px; font-weight: 760; font-variation-settings: "CASL" .6; }
+.st-target { font-family: var(--font-mono); font-variation-settings: "MONO" 1; font-size: 26px; letter-spacing: .08em; color: var(--ink-2); }
+.st-feedback { min-height: 26px; font-weight: 600; }
+.st-feedback.ok { color: var(--good); }
+.st-feedback.bad { color: var(--bad); }
+.steno-drill .kb-area { gap: 14px; }
