@@ -73,6 +73,58 @@
       .sort((a, b) => b.score - a.score)
       .slice(0, n || 6);
   }
+  // Keys the learner knows: everything from the lessons they started, plus every key they have practiced.
+  function knownChars() {
+    const set = new Set(TT.allowedChars(COURSE, learnedIndex()));
+    const tot = keyTotals();
+    Object.keys(tot).forEach(c => { if (tot[c][0] + tot[c][1] >= 5) { set.add(c); set.add(c.toLowerCase()); } });
+    return set;
+  }
+
+  // Weak-key drill. For each word: first choose a weak key (weaker keys more often), then a real word
+  // for that key, built from all keys the learner knows. Words do not come back until many others were used.
+  function weakDrill(count) {
+    const weak = weakKeys(6);
+    const known = knownChars();
+    const rnd = Math.random;
+    const words = dictionary().filter(w => w.length > 1 && [...w].every(c => known.has(c)));
+    const knownLetters = [...known].filter(c => /[a-z]/.test(c));
+    const pickFrom = (arr) => arr[Math.floor(rnd() * arr.length)];
+    const recent = [];
+    const fresh = (cands) => {
+      const keep = Math.min(cands.length - 1, 15);
+      let w = pickFrom(cands);
+      for (let t = 0; t < 20 && recent.includes(w); t++) w = pickFrom(cands);
+      recent.push(w); if (recent.length > Math.max(keep, 0)) recent.shift();
+      return w;
+    };
+    // Short group like "qaq" when no known word has the key.
+    const group = (c) => { let g = ''; for (let i = 0; i < 3 + Math.floor(rnd() * 2); i++) g += i % 2 === 0 || !knownLetters.length ? c : pickFrom(knownLetters); return g; };
+    const targets = weak.filter(k => k.c !== ' ').map(k => {
+      const c = k.c;
+      if (/[a-z]/.test(c)) return { c, score: k.score, make: () => { const cands = words.filter(w => w.includes(c)); return cands.length ? fresh(cands) : group(c); } };
+      if (/[A-Z]/.test(c)) {
+        const lc = c.toLowerCase();
+        return { c, score: k.score, make: () => { const cands = words.filter(w => w[0] === lc); const w = cands.length ? fresh(cands) : group(lc); return lc.toUpperCase() + w.slice(1); } };
+      }
+      if (/[0-9]/.test(c)) return { c, score: k.score, make: () => { let n = c; for (let i = 0; i < 1 + Math.floor(rnd() * 2); i++) n += rnd() < 0.5 ? c : String(Math.floor(rnd() * 10)); return n; } };
+      return { c, score: k.score, make: () => fresh(words.length ? words : TT.COMMON.slice(0, 100)) + c };
+    });
+    if (!targets.length) return TT.makeDrill(words.length ? words : TT.COMMON.slice(0, 200), new Set([' ', ...knownLetters]), [], count);
+    const total = targets.reduce((a, t) => a + t.score, 0);
+    const out = [];
+    let prev = null;
+    for (let i = 0; i < count; i++) {
+      let r = rnd() * total, t = targets[0];
+      for (const x of targets) { r -= x.score; if (r <= 0) { t = x; break; } }
+      // do not practice the same key three times in a row
+      if (targets.length > 1 && prev && prev.c === t.c && rnd() < 0.5) t = pickFrom(targets.filter(x => x !== t));
+      out.push(t.make());
+      prev = t;
+    }
+    return out.join(' ');
+  }
+
   let dictCache = null;
   function dictionary() {
     if (dictCache) return dictCache;
@@ -1547,9 +1599,8 @@
     const learned = TT.allowedChars(COURSE, learnedIndex());
     let text, title;
     if (kind === 'weak') {
-      const weak = weakKeys(5).map(k => k.c.toLowerCase());
-      text = TT.makeDrill(dictionary(), learned, weak, secs ? N : 16);
-      title = 'Weak keys: ' + weak.join(' ').toUpperCase();
+      text = weakDrill(N);
+      title = 'Weak keys: ' + Array.from(new Set(weakKeys(6).map(k => k.c.toLowerCase()))).join(' ').toUpperCase();
     } else if (kind === 'known') {
       text = TT.makeDrill(dictionary(), learned, [], N);
       title = 'Words with keys you know';

@@ -365,6 +365,30 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n10. Weak keys: variety from all practiced keys');
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.addInitScript(() => {
+      if (localStorage.getItem('seeded')) return;
+      localStorage.setItem('seeded', '1');
+      const K = {};
+      'abcdefghijklmnopqrstuvwxyz'.split('').forEach(c => { K['k' + c.charCodeAt(0)] = [60, 0]; });
+      K.k113 = [10, 6]; K.k122 = [12, 5]; K.k84 = [6, 3]; K.k63 = [6, 3]; // q, z, T, ?
+      localStorage.setItem('tt.state.v1', JSON.stringify({ v: 1, settings: { layout: 'us' }, settingsAt: 1, lessons: {}, history: [], keysByDev: { dev1: K }, dailyByDev: {}, textProg: {}, dismissed: {}, resetAt: 0 }));
+    });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e)));
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await page.click('.drill >> nth=0 >> button'); await page.waitForSelector('.tt-inner');
+    const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    const words = t.split(' ');
+    ok(words.every(w => /[qzT?]/.test(w)), 'every word practices a weak key: ' + t);
+    ok(new Set(words).size >= 14, 'many different words: ' + new Set(words).size + ' of ' + words.length);
+    ok(/[bcemnoprtuvwxy]/.test(t), 'words use practiced keys beyond the lessons');
+    ok(errs.length === 0, 'no page errors: ' + errs.join(' | '));
+    await ctx.close();
+  }
+
   console.log('\n9. Common words: how many');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
