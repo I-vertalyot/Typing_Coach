@@ -743,7 +743,8 @@
       void i;
       return sp;
     });
-    const textEl = h('div', { class: 'tt-text', role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
+    const oneLine = (S.textView || 'line') === 'line';
+    const textEl = h('div', { class: 'tt-text' + (oneLine ? ' one-line' : ''), role: 'textbox', 'aria-readonly': 'true', 'aria-label': 'Text to type: ' + text, tabindex: '0' }, inner);
     const statW = h('strong', null, '–'), statA = h('strong', null, '100%'), statT = h('strong', null, '0:00');
     const bar = h('span');
     const stats = h('div', { class: 'tt-stats' },
@@ -776,6 +777,13 @@
     function scrollLine() {
       const sp = spans[Math.min(pos, spans.length - 1)];
       if (!sp) return;
+      if (oneLine) {
+        // The cursor stays at about a third of the width; the text slides left under it.
+        const anchor = textEl.clientWidth * 0.34;
+        const x = sp.offsetLeft + (pos >= spans.length ? sp.offsetWidth : 0);
+        inner.style.transform = 'translateX(' + (anchor - x) + 'px)';
+        return;
+      }
       const top = sp.offsetTop;
       if (top === lastTop) return;
       lastTop = top;
@@ -1927,6 +1935,8 @@
         h('p', { class: 'opt-q' }, 'Show'),
         check('showKb', 'On-screen keyboard'),
         check('showHands', 'Hands with the finger to use'),
+        h('p', { class: 'opt-q' }, 'Text view'),
+        h('div', { class: 'row-inline' }, [['line', 'One moving line'], ['box', 'Whole text in a box']].map(([v, l]) => radio('view', v, l, S.textView || 'line', x => set('textView', x)))),
         h('p', { class: 'opt-q' }, 'Text size'),
         h('div', { class: 'row-inline' }, [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']].map(([v, l]) => radio('size', v, l, S.size, x => set('size', x)))),
         h('p', { class: 'opt-q' }, 'Sounds'),

@@ -520,3 +520,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .key.pickable:hover { filter: brightness(.95); }
 .key.picked { background: var(--zc); color: var(--zi); border-color: color-mix(in oklab, var(--zc) 60%, #000); box-shadow: 0 0 0 .4cqw color-mix(in oklab, var(--zc) 30%, transparent); }
 #pick-input { max-width: 360px; font-family: var(--font-mono); font-variation-settings: "MONO" 1; letter-spacing: .15em; }
+
+/* One moving line: no wrapping, the text slides left, typed text fades out at the left edge. */
+.tt-text.one-line { max-height: 1.7em; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 92%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 22%, #000 92%, transparent 100%); }
+.tt-text.one-line .tt-inner { white-space: pre; overflow-wrap: normal; width: max-content; transition: transform .09s ease-out; }
+.tt-text.one-line { padding: 6px 0; }
