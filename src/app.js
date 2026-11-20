@@ -778,8 +778,8 @@
       const sp = spans[Math.min(pos, spans.length - 1)];
       if (!sp) return;
       if (oneLine) {
-        // The cursor stays at about a third of the width; the text slides left under it.
-        const anchor = textEl.clientWidth * 0.34;
+        // The cursor stays in the middle of the line; the text slides left under it.
+        const anchor = textEl.clientWidth * 0.5;
         const x = sp.offsetLeft + (pos >= spans.length ? sp.offsetWidth : 0);
         inner.style.transform = 'translateX(' + (anchor - x) + 'px)';
         return;
