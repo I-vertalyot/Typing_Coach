@@ -781,7 +781,7 @@
         // The cursor stays in the middle of the line; the text slides left under it.
         const anchor = textEl.clientWidth * 0.5;
         const x = sp.offsetLeft + (pos >= spans.length ? sp.offsetWidth : 0);
-        inner.style.transform = 'translateX(' + (anchor - x) + 'px)';
+        inner.style.transform = 'translate3d(' + Math.round(anchor - x) + 'px, 0, 0)';
         return;
       }
       const top = sp.offsetTop;
@@ -844,10 +844,12 @@
       if (S.sound === 'all' && ok) TT.Sound.click();
       if (S.sound !== 'off' && !ok) TT.Sound.error();
       if (S.onError === 'stop') {
-        if (ok) { spans[pos].classList.add('done'); pos++; }
+        if (ok) { spans[pos].classList.add('done'); pos++; textEl.classList.remove('flash-err'); }
         else {
           slips.add(pos); spans[pos].classList.add('slip');
-          box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+          // No shaking: the cursor turns red for a moment instead.
+          textEl.classList.add('flash-err');
+          clearTimeout(textEl._errT); textEl._errT = setTimeout(() => textEl.classList.remove('flash-err'), 600);
         }
       } else {
         typed[pos] = ch;
