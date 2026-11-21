@@ -556,3 +556,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 
 .weak-words { display: flex; flex-wrap: wrap; gap: 5px; }
 .ww { font-size: 14px; padding: 1px 8px; border-radius: 6px; background: color-mix(in oklab, var(--bad) 10%, var(--sheet)); border: 1px solid color-mix(in oklab, var(--bad) 25%, var(--rule)); }
+
+.ww-body { display: grid; gap: 8px; }
+.ww-days { font-size: 11px; font-weight: 700; color: var(--good); }
+.ww.good { background: color-mix(in oklab, var(--good) 12%, var(--sheet)); border-color: color-mix(in oklab, var(--good) 30%, var(--rule)); }

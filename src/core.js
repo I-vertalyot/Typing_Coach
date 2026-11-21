@@ -166,7 +166,9 @@
       resetAt: 0,        // progress before this time was reset on some device
       keysResetAt: 0,    // key statistics before this time were reset on some device
       wordsByDev: {},    // dev → { "w_word": [typed without mistake, typed with a mistake] }
-      wordsResetAt: 0
+      wordsResetAt: 0,
+      wordDays: {},      // "w_word" → days ('YYYY-MM-DD') when the word was typed right 7 times in a row
+      learnedWords: {}   // "w_word" → time it became a strong learned word
     };
   };
 
@@ -182,7 +184,7 @@
 
     // A reset on any device wins over older progress everywhere.
     const rs = Math.max(L.resetAt || 0, R.resetAt || 0);
-    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, textProg: {}, resetAt: rs });
+    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordDays: {}, learnedWords: {}, textProg: {}, resetAt: rs });
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
@@ -192,8 +194,8 @@
     if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
     S.keysResetAt = ks;
     const ws = Math.max(L.wordsResetAt || 0, R.wordsResetAt || 0);
-    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordsResetAt: ws }); vsLocal = true; }
-    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordsResetAt: ws }); vsRemote = true; }
+    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordDays: {}, wordsResetAt: ws }); vsLocal = true; }
+    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordDays: {}, wordsResetAt: ws }); vsRemote = true; }
     S.wordsResetAt = ws;
 
     // settings: newest wins
@@ -262,6 +264,21 @@
       if (JSON.stringify(m) !== JSON.stringify({ next: a.next || 0, best: a.best || 0, done: a.done || 0 })) vsLocal = true;
       S.textProg[id] = m;
     });
+
+    // word days: union per word (last 10 days); learned words: union
+    const wd = {};
+    new Set(Object.keys(L.wordDays || {}).concat(Object.keys(R.wordDays || {}))).forEach(k => {
+      const a = (L.wordDays || {})[k] || [], b = (R.wordDays || {})[k] || [];
+      const u = Array.from(new Set(a.concat(b))).sort().slice(-10);
+      if (u.join() !== a.slice().sort().join()) vsLocal = true;
+      if (u.join() !== b.slice().sort().join()) vsRemote = true;
+      wd[k] = u;
+    });
+    S.wordDays = wd;
+    const lw = Object.assign({}, R.learnedWords || {});
+    Object.keys(L.learnedWords || {}).forEach(k => { if (!(k in lw)) vsRemote = true; lw[k] = Math.max(lw[k] || 0, L.learnedWords[k]); });
+    Object.keys(R.learnedWords || {}).forEach(k => { if (!((L.learnedWords || {})[k])) vsLocal = true; });
+    S.learnedWords = lw;
 
     S.dismissed = Object.assign({}, R.dismissed, L.dismissed);
     return { state: S, changedVsRemote: vsRemote, changedVsLocal: vsLocal };

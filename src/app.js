@@ -746,7 +746,8 @@
       Object.keys(st.words).forEach(w => {
         const f = 'w_' + w.replace(/'/g, '');
         if (!f.match(/^w_[a-z]+$/)) return;
-        const [okN, badN] = st.words[w];
+        const [okN, badN, , bestRun] = st.words[w];
+        if (bestRun >= 7) markWordDay(f);
         if (!WB[f] && !badN) return;
         WB[f] = WB[f] || [0, 0]; WB[f][0] += okN; WB[f][1] += badN;
       });
@@ -966,8 +967,10 @@
         if (w.length < 2 || !/^[a-z']+$/.test(w)) continue;
         let bad = false;
         for (let i = a; i < b; i++) if (missAt.has(i)) { bad = true; break; }
-        const e = words[w] = words[w] || [0, 0];
+        const e = words[w] = words[w] || [0, 0, 0, 0]; // ok, bad, current run, best run
         e[bad ? 1 : 0]++;
+        e[2] = bad ? 0 : e[2] + 1;
+        e[3] = Math.max(e[3], e[2]);
       }
       const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: limit ? pos : chars.length, hits, misses, errors, strokes, timeUp: !!timeUp, words };
       const stars = TT.stars(st.acc, st.wpm, sess.target || 20);
@@ -979,6 +982,7 @@
     function showResult(st, stars, out) {
       result.textContent = '';
       const titles = ['Almost! You need 90% accuracy for a star.', 'Good. Now aim for more accuracy.', 'Well done!', 'Excellent!'];
+      if (App.newlyLearned && App.newlyLearned.length) { out.message = 'New strong words: ' + App.newlyLearned.join(', ') + '. You typed them right on ' + LEARN_DAYS + ' days in a row!'; App.newlyLearned = []; }
       if (st.timeUp) out.message = 'Time is up! You typed ' + Math.round(correctCount() / 5) + ' words in ' + fmtClock(st.ms) + '.';
       const missList = Object.keys(misses).sort((a, b) => misses[b] - misses[a]).slice(0, 6);
       const primary = out.primary || { label: 'Again', act: restart };
@@ -1408,9 +1412,14 @@
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       (() => { const ww = weakWords(8); return drillCard('Your weak words',
-        ww.length ? h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' }, x.w))) : h('span', { class: 'muted small' }, 'Words you often mistype appear here after some practice.'),
+        ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww', title: x.streak + ' of ' + LEARN_DAYS + ' days' }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null))),
+          h('span', { class: 'small muted' }, 'Type a word right ' + LEARN_RUN + ' times in a row, on ' + LEARN_DAYS + ' days in a row, and it moves to your strong words.'))
+          : h('span', { class: 'muted small' }, 'Words you often mistype appear here after some practice.'),
         ww.length ? () => startDrill('weakwords') : null,
         hasWordStats() ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null); })(),
+      (() => { const lw = learnedList(); return lw.length ? drillCard('Strong learned words',
+        h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, lw.slice(0, 20).map(w => h('span', { class: 'ww good' }, w))), lw.length > 20 ? h('span', { class: 'small muted' }, '+ ' + (lw.length - 20) + ' more') : null),
+        () => startDrill('learned')) : null; })(),
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
@@ -1472,29 +1481,53 @@
       h('h3', null, title), h('div', { class: 'drill-body' }, body),
       extra ? h('div', { class: 'cta-row' }, start, extra) : start);
   }
-  // Words the learner often mistypes: [{w, ok, bad, score}]
+  // A weak word becomes a strong learned word after 5 days in a row on which it was typed
+  // correctly 7 times in a row in one exercise.
+  const LEARN_DAYS = 5, LEARN_RUN = 7;
+  function wordStreak(f, now) {
+    const days = new Set((App.state.wordDays || {})[f] || []);
+    let n = 0, t = now || Date.now();
+    if (!days.has(TT.dayKey(t))) t -= 86400000; // today not done yet: the streak can still continue
+    while (days.has(TT.dayKey(t)) && n < 30) { n++; t -= 86400000; }
+    return n;
+  }
+  function markWordDay(f) {
+    const S = App.state;
+    if (S.learnedWords[f]) return;
+    const tot = TT.sumByDevice(S.wordsByDev)[f];
+    if (!tot || !tot[1]) return; // only weak words
+    const day = TT.dayKey(Date.now());
+    const list = S.wordDays[f] = (S.wordDays[f] || []).filter(d => d !== day).concat([day]).sort().slice(-10);
+    void list;
+    if (wordStreak(f) >= LEARN_DAYS) {
+      S.learnedWords[f] = Date.now();
+      App.newlyLearned = (App.newlyLearned || []).concat([f.slice(2)]);
+    }
+  }
+  // Words the learner mistyped and has not learned yet: [{w, ok, bad, score, streak}]
   function weakWords(n) {
     const tot = TT.sumByDevice(App.state.wordsByDev);
-    return Object.keys(tot).map(k => { const [ok, bad] = tot[k]; return { w: k.slice(2), ok, bad, score: (bad + 0.5) / (ok + bad + 1) }; })
-      .filter(x => x.bad > 0 && x.w.length > 1 && x.score > 0.2)
+    const learned = App.state.learnedWords || {};
+    return Object.keys(tot).filter(k => !learned[k]).map(k => { const [ok, bad] = tot[k]; return { w: k.slice(2), ok, bad, score: (bad + 0.5) / (ok + bad + 1), streak: wordStreak(k) }; })
+      .filter(x => x.bad > 0 && x.w.length > 1)
       .sort((a, b) => b.score - a.score || b.bad - a.bad)
       .slice(0, n || 12);
   }
-  function weakWordsDrill(count) {
-    const weak = weakWords(15);
+  const learnedList = () => Object.keys(App.state.learnedWords || {}).sort((a, b) => App.state.learnedWords[b] - App.state.learnedWords[a]).map(k => k.slice(2));
+  // Untimed: the 6 weakest words, 7 times each, so one drill can count as a good day.
+  // Timed: the same words, mixed, as long as the time lasts.
+  function weakWordsDrill(count, timed) {
+    const weak = weakWords(6);
     if (!weak.length) return '';
-    const total = weak.reduce((a, x) => a + x.score, 0);
-    const out = [];
-    for (let i = 0; i < count; i++) {
-      let w;
-      for (let t = 0; t < 10; t++) {
-        let r = Math.random() * total; w = weak[0].w;
-        for (const x of weak) { r -= x.score; if (r <= 0) { w = x.w; break; } }
-        if (weak.length === 1 || w !== out[out.length - 1]) break;
-      }
-      out.push(w);
+    const pool = [];
+    if (!timed) weak.forEach(x => { for (let i = 0; i < LEARN_RUN; i++) pool.push(x.w); });
+    else for (let i = 0; i < count; i++) pool.push(weak[i % weak.length].w);
+    // shuffle, then avoid the same word twice in a row where possible
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    for (let i = 1; i < pool.length; i++) {
+      if (pool[i] === pool[i - 1]) { const j = pool.findIndex((w, k) => k > i && w !== pool[i] && pool[k - 1] !== w && (pool[k + 1] || '') !== pool[i - 1]); if (j > 0) [pool[i], pool[j]] = [pool[j], pool[i]]; }
     }
-    return out.join(' ');
+    return pool.join(' ');
   }
   async function resetWordStats() {
     const ok = await TT.dialog({ title: 'Reset weak words?', body: 'The list of words you often mistype is deleted on all your devices. Lessons, stars and history stay.', ok: 'Reset weak words', danger: true });
@@ -1678,8 +1711,12 @@
     const N = secs ? Math.ceil(secs / 60 * 90) + 10 : 18;
     const learned = TT.allowedChars(COURSE, learnedIndex());
     let text, title;
-    if (kind === 'weakwords') {
-      text = weakWordsDrill(N);
+    if (kind === 'learned') {
+      const lw = learnedList();
+      text = TT.makeDrill(lw, new Set(' abcdefghijklmnopqrstuvwxyz'), [], N);
+      title = 'Strong learned words';
+    } else if (kind === 'weakwords') {
+      text = weakWordsDrill(N, !!secs);
       title = 'Weak words';
     } else if (kind === 'weak') {
       text = weakDrill(N);

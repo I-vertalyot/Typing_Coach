@@ -73,6 +73,16 @@ if (mk.state.history.length !== 2) bad('key reset must keep history');
 const mk2 = TT.mergeState(Y, X, 'devB');
 if (Object.keys(mk2.state.keysByDev).length !== 0 || !mk2.changedVsLocal) bad('device B should accept the key reset');
 
+// 5c. word days and learned words merge as unions
+const P1 = TT.defaultState(), P2 = TT.defaultState();
+P1.wordDays = { w_teacher: ['2026-11-16', '2026-11-17'] }; P1.learnedWords = { w_missed: 5 };
+P2.wordDays = { w_teacher: ['2026-11-18'] }; P2.learnedWords = { w_class: 7 };
+const mw = TT.mergeState(P1, P2, 'devA');
+if (mw.state.wordDays.w_teacher.join() !== '2026-11-16,2026-11-17,2026-11-18') bad('word days union: ' + mw.state.wordDays.w_teacher);
+if (!mw.state.learnedWords.w_missed || !mw.state.learnedWords.w_class) bad('learned words union');
+if (!mw.changedVsRemote || !mw.changedVsLocal) bad('word merge flags');
+if (TT.mergeState(mw.state, mw.state, 'devA').changedVsRemote) bad('word merge of identical states must be a no-op');
+
 // 6. diff
 const d = TT.diffWords('I am agree with you', 'I agree with you.');
 console.log('diff:', JSON.stringify(d));

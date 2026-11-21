@@ -414,11 +414,11 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     ok(card.includes('teacher') && card.includes('missed') && !card.includes('short'), 'card lists the mistyped words: ' + card.replace(/\s+/g, ' '));
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').length >= 18, 'drill practices only those words: ' + d);
+    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').filter(w => w === 'teacher').length === 7 && d.split(' ').filter(w => w === 'missed').length === 7, 'drill practices only those words, 7 times each: ' + d);
     ok(await page.isVisible('.ty-note >> text=Reset weak words'), 'weak words drill has its own reset button');
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
-    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'words typed correctly many times stop being weak');
+    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('teacher 1/5'), 'a perfect drill counts as day 1 of 5');
     // make a new mistake, then reset
     await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
     await page.click('.ex-btn >> nth=1'); await page.waitForSelector('.tt-inner');
@@ -431,6 +431,36 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.click('.ty-note >> text=Reset weak words');
     await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
     ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'reset clears the weak words');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('\n12. Weak word becomes a strong word after 5 good days');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.clock.install({ time: new Date('2026-11-16T10:00:00') });
+    const toPractice = async () => { await page.evaluate(() => { location.hash = '#learn'; }); await page.evaluate(() => { location.hash = '#practice'; }); await page.waitForSelector('.drills'); };
+    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
+    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    for (let i = 0; i < text.length; i++) { if (i === text.indexOf('teacher') + 2) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
+    await page.waitForSelector('.result:not([hidden])');
+    for (let day = 1; day <= 5; day++) {
+      await toPractice();
+      await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+      const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+      if (day === 1) ok(d.split(' ').filter(w => w === 'teacher').length === 7, 'untimed weak words drill has the word 7 times: ' + d);
+      await typeExercise(page);
+      if (day === 5) ok((await page.textContent('.result')).includes('New strong words: teacher'), 'result announces the new strong word');
+      if (day < 5) {
+        await toPractice();
+        if (day === 2) ok((await page.textContent('.drill:has-text("Your weak words")')).includes('teacher 2/5'), 'card shows 2 of 5 days');
+      }
+      await page.clock.fastForward('24:00:00');
+    }
+    await toPractice();
+    ok(!(await page.textContent('.drill:has-text("Your weak words")')).includes('teacher'), 'the word left the weak words');
+    ok((await page.textContent('.drill:has-text("Strong learned words")')).includes('teacher'), 'the word is in Strong learned words');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
