@@ -543,7 +543,10 @@
     const goal = App.state.settings.goal || 10;
     const streak = TT.streak(dailyTotals(), Date.now());
 
+    const bigLetter = ni >= 0 && COURSE[ni].part === 1 ? COURSE[ni].show[0] : 'T';
     const intro = h('div', { class: 'learn-intro' },
+      h('span', { class: 'riso-letter o', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
+      h('span', { class: 'riso-letter g', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
       h('h1', { class: 'display' }, name ? 'Hi, ' + name + '. Ready to type?' : 'Ten fingers, clear English.'),
       h('p', { class: 'lede' }, 'Learn to type without looking. Every lesson also teaches one English point and one tip for writing better requests to Claude.'));
 

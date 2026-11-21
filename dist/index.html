@@ -7,52 +7,61 @@
 <meta name="description" content="Ten-finger typing lessons that also teach English writing and clear requests to Claude.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Recursive:slnt,wght,CASL,CRSV,MONO@-15..0,300..1000,0..1,0..1,0..1&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
 <style>
 :root {
-  /* Plan: a quiet study page (paper, ink, highlighter). The keyboard is the one bold object;
-     the finger zones carry all the color. Layout: left-aligned reading column, typing screen centered. */
-  --paper: #F2F4F7;
-  --sheet: #FFFFFF;
-  --ink: #17203A;
-  --ink-2: #4A5468;
-  --ink-3: #6F798C;
-  --rule: #D9DEE7;
-  --mark: #FFE15A;
-  --mark-ink: #17203A;
-  --pen: #1F5FC4;
-  --good: #0B7D47;
-  --bad: #C42F2F;
-  --bad-bg: #FCE4E4;
-  --focus: #2A78D6;
-  --f-pinky: #E87BA4; --f-ring: #2A78D6; --f-middle: #1BAF7A; --f-lindex: #EDA100; --f-rindex: #6250D6; --f-thumb: #A9B1BF;
-  --i-pinky: #1F0E17; --i-ring: #FFFFFF; --i-middle: #062019; --i-lindex: #231800; --i-rindex: #FFFFFF; --i-thumb: #17203A;
-  --key: #FFFFFF; --key-edge: #C2C9D5; --key-ink: #2A3348; --key-dim: #E9EDF2; --kb-bed: #E2E6EC;
-  --chart: #2A78D6;
-  --font-ui: "Recursive", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Recursive", ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
-  --shadow: 0 1px 0 rgba(23, 32, 58, .04), 0 10px 28px -16px rgba(23, 32, 58, .25);
+  /* Riso poster: peach paper, dark green ink, fluorescent orange; a light print grain over everything.
+     Finger zones use riso ink colors. Layout: left-aligned reading column, typing screen centered. */
+  --paper: #F6D9C6;
+  --sheet: #FBE8DB;
+  --ink: #22392F;
+  --ink-2: #4B5E54;
+  --ink-3: #6E7C73;
+  --rule: #DDB9A2;
+  --mark: #F2652B;
+  --mark-ink: #FFF4EC;
+  --pen: #C2431A;
+  --good: #1E7A4C;
+  --bad: #B3261E;
+  --bad-bg: #F8CDBF;
+  --focus: #F2652B;
+  --f-pinky: #FF48B0; --f-ring: #0078BF; --f-middle: #00A95C; --f-lindex: #FFE800; --f-rindex: #765BA7; --f-thumb: #8FA096;
+  --i-pinky: #1A0612; --i-ring: #FFFFFF; --i-middle: #02160C; --i-lindex: #1F1B00; --i-rindex: #FFFFFF; --i-thumb: #22392F;
+  --key: #2E4A3E; --key-edge: #15241D; --key-ink: #F6D9C6; --key-dim: #3A5649; --kb-bed: #22392F;
+  --band: #22392F; --band-ahead: #2C463A; --band-ink: #F6D9C6;
+  --chart: #F2652B;
+  --grain-a: rgba(34, 57, 47, .13); --grain-b: rgba(242, 101, 43, .11);
+  --font-display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --font-ui: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --shadow: 0 1px 0 rgba(34, 57, 47, .06), 0 10px 28px -16px rgba(34, 57, 47, .35);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0E1219; --sheet: #161B25; --ink: #E7EBF3; --ink-2: #AEB6C6; --ink-3: #8790A3; --rule: #283041;
-    --mark: #F0CD45; --mark-ink: #12161F; --pen: #7FB0FF; --good: #3CC88C; --bad: #FF7070; --bad-bg: #3B1D24; --focus: #7FB0FF;
-    --f-pinky: #D55181; --f-ring: #3987E5; --f-middle: #199E70; --f-lindex: #C98500; --f-rindex: #9085E9; --f-thumb: #5E687B;
-    --i-pinky: #12080D; --i-ring: #08111F; --i-middle: #04170F; --i-lindex: #170F00; --i-rindex: #0D0A1F; --i-thumb: #F0F2F6;
-    --key: #222936; --key-edge: #0A0D13; --key-ink: #D9DEE8; --key-dim: #1A1F2A; --kb-bed: #11151D;
-    --chart: #3987E5;
+    --paper: #12211A; --sheet: #1A2E24; --ink: #F6D9C6; --ink-2: #D9BBA7; --ink-3: #A68F80; --rule: #2E4A3D;
+    --mark: #FF7A45; --mark-ink: #12211A; --pen: #FF9A6B; --good: #5BD08B; --bad: #FF6B57; --bad-bg: #3E1F18; --focus: #FF9A6B;
+    --f-pinky: #FF48B0; --f-ring: #2B9BE8; --f-middle: #00B866; --f-lindex: #FFE800; --f-rindex: #9C7FD6; --f-thumb: #6E8577;
+    --i-pinky: #1A0612; --i-ring: #04121E; --i-middle: #02160C; --i-lindex: #1F1B00; --i-rindex: #120A24; --i-thumb: #F6D9C6;
+    --key: #22392F; --key-edge: #0A140F; --key-ink: #F6D9C6; --key-dim: #1B2E25; --kb-bed: #0C1712;
+    --band: #0C1712; --band-ahead: #16271F; --band-ink: #F6D9C6;
+    --chart: #FF7A45;
+    --grain-a: rgba(246, 217, 198, .07); --grain-b: rgba(255, 122, 69, .06);
     --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 12px 30px -16px rgba(0, 0, 0, .7);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --paper: #0E1219; --sheet: #161B25; --ink: #E7EBF3; --ink-2: #AEB6C6; --ink-3: #8790A3; --rule: #283041;
-  --mark: #F0CD45; --mark-ink: #12161F; --pen: #7FB0FF; --good: #3CC88C; --bad: #FF7070; --bad-bg: #3B1D24; --focus: #7FB0FF;
-  --f-pinky: #D55181; --f-ring: #3987E5; --f-middle: #199E70; --f-lindex: #C98500; --f-rindex: #9085E9; --f-thumb: #5E687B;
-  --i-pinky: #12080D; --i-ring: #08111F; --i-middle: #04170F; --i-lindex: #170F00; --i-rindex: #0D0A1F; --i-thumb: #F0F2F6;
-  --key: #222936; --key-edge: #0A0D13; --key-ink: #D9DEE8; --key-dim: #1A1F2A; --kb-bed: #11151D;
-  --chart: #3987E5;
+  --paper: #12211A; --sheet: #1A2E24; --ink: #F6D9C6; --ink-2: #D9BBA7; --ink-3: #A68F80; --rule: #2E4A3D;
+  --mark: #FF7A45; --mark-ink: #12211A; --pen: #FF9A6B; --good: #5BD08B; --bad: #FF6B57; --bad-bg: #3E1F18; --focus: #FF9A6B;
+  --f-pinky: #FF48B0; --f-ring: #2B9BE8; --f-middle: #00B866; --f-lindex: #FFE800; --f-rindex: #9C7FD6; --f-thumb: #6E8577;
+  --i-pinky: #1A0612; --i-ring: #04121E; --i-middle: #02160C; --i-lindex: #1F1B00; --i-rindex: #120A24; --i-thumb: #F6D9C6;
+  --key: #22392F; --key-edge: #0A140F; --key-ink: #F6D9C6; --key-dim: #1B2E25; --kb-bed: #0C1712;
+  --band: #0C1712; --band-ahead: #16271F; --band-ink: #F6D9C6;
+  --chart: #FF7A45;
+  --grain-a: rgba(246, 217, 198, .07); --grain-b: rgba(255, 122, 69, .06);
   --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 12px 30px -16px rgba(0, 0, 0, .7);
   color-scheme: dark;
 }
@@ -571,6 +580,51 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .ww-body { display: grid; gap: 8px; }
 .ww-days { font-size: 11px; font-weight: 700; color: var(--good); }
 .ww.good { background: color-mix(in oklab, var(--good) 12%, var(--sheet)); border-color: color-mix(in oklab, var(--good) 30%, var(--rule)); }
+
+/* ── Riso poster look ── */
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+  background-image: radial-gradient(var(--grain-a) 1px, transparent 1.2px), radial-gradient(var(--grain-b) 1px, transparent 1.3px);
+  background-size: 5px 5px, 7px 7px; background-position: 0 0, 2px 3px; }
+.display, h1, .tip h3, .cont-title, .res-top h2, .brand { font-family: var(--font-display); font-weight: 400; font-variation-settings: normal; letter-spacing: -0.01em; }
+h2, h3, .lr-title { font-weight: 800; }
+.brand-w { font-family: var(--font-display); }
+.brand-kc { background: var(--mark); color: var(--mark-ink); border-color: var(--ink); }
+.nav-link { text-transform: uppercase; letter-spacing: .08em; font-size: 14px; font-weight: 700; }
+.nav-link.on { background: none; color: var(--mark); box-shadow: inset 0 -3px 0 var(--mark); border-radius: 0; }
+.tag, .lesson-head .small, .ty-title .muted, .tip-label, .ba-tag, .kbd-hint, .stat span, .rn span, .tile > span:not(.small) { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .08em; }
+.tag.en, .tag.ai { background: transparent; border: 1.5px solid currentColor; }
+.stat strong, .rn strong, .tile strong, .today-num strong { font-family: var(--font-display); font-weight: 400; font-variation-settings: normal; }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: var(--mark); color: var(--mark-ink); }
+.panel, .tt-box, .result, .lessons, .text-list, .tile { border-color: var(--rule); }
+.continue { box-shadow: inset 6px 0 0 var(--mark); }
+.lesson-row.is-next .lr-num { background: var(--mark); color: var(--mark-ink); }
+.prog-pill { background: color-mix(in oklab, var(--mark) 22%, var(--sheet)); }
+.meter span { background: var(--mark); }
+.star.on svg path { fill: var(--mark); stroke: color-mix(in oklab, var(--mark) 60%, var(--ink)); }
+/* Overprinted letter on the Learn page, like the poster */
+.learn-intro { position: relative; }
+.riso-letter { position: absolute; right: 0; top: -10px; font-family: var(--font-display); font-size: 300px; line-height: .8; pointer-events: none; user-select: none; mix-blend-mode: multiply; z-index: 0; }
+.riso-letter.o { color: var(--mark); opacity: .85; transform: translate(-18px, 8px); }
+.riso-letter.g { color: var(--ink); opacity: .8; }
+:root[data-theme="dark"] .riso-letter { mix-blend-mode: screen; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .riso-letter { mix-blend-mode: screen; } }
+.learn-intro > :not(.riso-letter) { position: relative; z-index: 1; }
+/* The typing line is printed on a green band */
+.tt-text.one-line { background: var(--band); color: var(--band-ink); border-radius: 6px; padding: 10px 0; }
+.tt-text.one-line::before { background: var(--band-ahead); border-left: 3px solid var(--mark); }
+.tt-text.one-line .ch { color: var(--band-ink); }
+.tt-text.one-line .ch.done { color: var(--band-ink); opacity: .4; }
+.tt-text.one-line .ch.cur::before { background: var(--mark); width: 3px; }
+.tt-text.one-line .ch.bad { color: #FFB4A0; background: rgba(179, 38, 30, .45); }
+.key.next { box-shadow: 4px 4px 0 var(--mark); }
+.key.special { color: color-mix(in oklab, var(--key-ink) 70%, transparent); }
+/* Fade only the text at the edges of the band, not the band itself */
+.tt-text.one-line { -webkit-mask-image: none; mask-image: none; }
+.tt-text.one-line::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, var(--band) 0, transparent 24%, transparent 90%, var(--band-ahead) 100%); }
+.learn-top, .course { position: relative; z-index: 1; }
+.riso-letter { font-size: 260px; }
 
 </style>
 </head>
@@ -2638,7 +2692,10 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     const goal = App.state.settings.goal || 10;
     const streak = TT.streak(dailyTotals(), Date.now());
 
+    const bigLetter = ni >= 0 && COURSE[ni].part === 1 ? COURSE[ni].show[0] : 'T';
     const intro = h('div', { class: 'learn-intro' },
+      h('span', { class: 'riso-letter o', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
+      h('span', { class: 'riso-letter g', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
       h('h1', { class: 'display' }, name ? 'Hi, ' + name + '. Ready to type?' : 'Ten fingers, clear English.'),
       h('p', { class: 'lede' }, 'Learn to type without looking. Every lesson also teaches one English point and one tip for writing better requests to Claude.'));
 
