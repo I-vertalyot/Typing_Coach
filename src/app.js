@@ -1466,7 +1466,7 @@
     const wrap = h('div', { class: 'wrap practice' });
     wrap.append(h('header', { class: 'page-head' },
       h('h1', { class: 'display' }, 'Practice'),
-      h('p', { class: 'lede' }, 'Type your own texts, train your weak keys, or ask Claude for a new practice text.')));
+      h('p', { class: 'lede' }, 'Train your weak keys and words, or type your own texts.')));
 
     // drills
     const weak = weakKeys(5);
@@ -1507,11 +1507,6 @@
     wrap.append(mine);
 
     // generator
-    wrap.append(genSection());
-
-    // starters
-    wrap.append(h('section', null, sectionHead('Starter texts', 'Useful phrases for emails and for working with Claude.'),
-      h('ul', { class: 'text-list' }, TT.STARTERS.map(t => textRow(t, false)))));
     view.append(wrap);
   }
 

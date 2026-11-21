@@ -14,7 +14,6 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 - **Library.** Fixed lessons whose text never changes (warm-ups, every letter, numbers and symbols, everyday English). To add a lesson, add a block to `src/library.js` (the template is at the top of the file).
 - **Your own texts.** Paste a text or open a `.txt` file. Long texts are split into parts, and the app remembers where you stopped. Smart quotes and dashes become keyboard characters.
 - **Writing coach** (in lesson 26). Claude corrects your request (removals crossed out, additions in blue), explains each mistake, rates how clear the request is and suggests a better version. Then you type it.
-- **Practice texts from Claude** on any topic and level (A2–C1).
 - **Common words.** Practice the 50, 100, 200, 500 or 1000 most common English words.
 - **Practice length.** The quick drills last 18 words, or 1, 2, 3, 5 or 10 minutes with a countdown.
 - **Weak keys drill.** Every word practices one of your weak keys, and weaker keys come more often. The words use every key you have practiced and rarely repeat. Weak capitals and marks (? , . and so on) are practiced too. A Reset button clears the key statistics on all devices.

@@ -187,12 +187,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await A.page.waitForTimeout(2200);
     ok(JSON.parse(store.get('data/users/u_test1/journal') || '{}').entries.length === 1, 'coach feedback saved to the journal');
 
-    // Generated practice text
     await A.page.goto(FILE + '#practice'); await A.page.waitForSelector('.practice');
-    await A.page.fill('#gen-topic', 'booking a hotel');
-    await A.page.click('text=Write a practice text');
-    await A.page.waitForSelector('.gen-result', { timeout: 5000 });
-    ok((await A.page.textContent('.gen-result')).includes('Booking a hotel'), 'Claude practice text shown');
+    ok(!(await A.page.textContent('.practice')).includes('Make a practice text with Claude') && !(await A.page.textContent('.practice')).includes('Starter texts'), 'Claude text generator and starter texts are gone from Practice');
 
     // reset on A propagates to B
     await A.page.goto(FILE + '#options'); await A.page.waitForSelector('.options');
