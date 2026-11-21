@@ -468,6 +468,28 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n13. Library (fixed lessons)');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.click('.nav-link[data-nav="library"]'); await page.waitForSelector('.library');
+    const n = await page.evaluate(() => TT.LIBRARY.length);
+    ok(await page.$$eval('.library .text-row', e => e.length) === n, 'Library lists all ' + n + ' fixed lessons');
+    const startRow = '.library .text-row:has-text("Pangrams")';
+    await page.click(startRow + ' .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t1 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(t1.startsWith('The quick brown fox jumps over the lazy dog.'), 'the lesson shows its fixed text');
+    await typeExercise(page, { mistakes: 3 });
+    await page.click('.ty-head .back'); await page.waitForSelector('.library');
+    await page.click(startRow + ' .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(t1 === t2, 'the text is the same the next time, also after mistakes');
+    await typeExercise(page);
+    await page.click('.ty-head .back'); await page.waitForSelector('.library');
+    ok(await page.isVisible(startRow + ' .stars'), 'best stars are shown');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   console.log('\n9. Common words: how many');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });

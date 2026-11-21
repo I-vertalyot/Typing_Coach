@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
-const scripts = ['content.js', 'layouts.js', 'core.js', 'ui.js', 'app.js'].map(src).join('\n');
+const scripts = ['content.js', 'library.js', 'layouts.js', 'core.js', 'ui.js', 'app.js'].map(src).join('\n');
 if (scripts.includes('</script')) throw new Error('script contains </script');
 const html = src('index.template.html')
   .replace('/*STYLE*/', () => src('style.css'))

@@ -403,7 +403,7 @@
   }
 
   // ───────────────────────── Shell ─────────────────────────
-  const NAV = [['learn', 'Learn'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
+  const NAV = [['learn', 'Learn'], ['library', 'Library'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
   function renderShell() {
     const app = document.getElementById('app');
     app.textContent = '';
@@ -481,7 +481,7 @@
     const hash = (location.hash || '').replace('#', '');
     const m = hash.match(/^lesson-(\d+)$/);
     if (m) return { view: 'lesson', idx: Math.min(COURSE.length, Math.max(1, +m[1])) - 1 };
-    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys'].includes(hash)) return { view: hash };
+    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys', 'library'].includes(hash)) return { view: hash };
     return { view: 'learn' };
   }
   function render() {
@@ -503,6 +503,7 @@
     else if (r.view === 'options') renderOptions(view);
     else if (r.view === 'steno') renderSteno(view);
     else if (r.view === 'keys') renderPickKeys(view);
+    else if (r.view === 'library') renderLibrary(view);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
   // A link to the page we are already on (for example from the typing screen) still re-renders it.
@@ -1313,6 +1314,64 @@
     };
     window.addEventListener('blur', () => { down.clear(); chord.clear(); kb.set('down', null); }, { once: true });
     show();
+  }
+
+  // ───────────────────────── Library (fixed lessons) ─────────────────────────
+  // Lessons from src/library.js. The text never changes; only your results are saved (best per part).
+  const libParts = (l) => TT.chunkText(TT.cleanText(l.text, App.layout), 260);
+  const libRec = (l) => (App.state.lessons['lib-' + l.id] && App.state.lessons['lib-' + l.id].ex) || {};
+  function libInfo(l) {
+    const parts = libParts(l), rec = libRec(l);
+    let done = 0, minS = 3, bestW = 0;
+    parts.forEach((_, i) => { const r = rec[i]; if (r && r.s >= 1) { done++; minS = Math.min(minS, r.s); } if (r) bestW = Math.max(bestW, r.w || 0); });
+    return { parts: parts.length, done, stars: done === parts.length ? minS : 0, bestW, next: parts.findIndex((_, i) => !(rec[i] && rec[i].s >= 1)) };
+  }
+  function renderLibrary(view) {
+    const wrap = h('div', { class: 'wrap library' });
+    wrap.append(h('header', { class: 'page-head' },
+      h('h1', { class: 'display' }, 'Library'),
+      h('p', { class: 'lede' }, 'Fixed lessons. The text is always the same, so you can repeat a lesson and compare your results.')));
+    const groups = [];
+    TT.LIBRARY.forEach(l => { let g = groups.find(x => x.name === l.group); if (!g) groups.push(g = { name: l.group || 'Lessons', items: [] }); g.items.push(l); });
+    groups.forEach(g => {
+      wrap.append(h('section', null, sectionHead(g.name),
+        h('ul', { class: 'text-list' }, g.items.map(l => {
+          const info = libInfo(l);
+          const words = (l.text.match(/\S+/g) || []).length;
+          return h('li', { class: 'text-row' },
+            h('div', { class: 'tr-main' },
+              h('strong', null, l.title),
+              h('span', { class: 'muted small' }, words + ' words' + (info.parts > 1 ? ' · ' + info.done + ' of ' + info.parts + ' parts done' : '') + (info.bestW ? ' · best ' + fmtWpm(info.bestW) + ' WPM' : ''))),
+            h('div', { class: 'tr-actions' },
+              info.stars ? TT.starRow(info.stars, 3) : null,
+              h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start')));
+        }))));
+    });
+    view.append(wrap);
+  }
+  function startLibrary(l, pi) {
+    const parts = libParts(l);
+    if (!parts.length) { TT.toast('This lesson has no characters your keyboard can type.'); return; }
+    pi = Math.min(pi || 0, parts.length - 1);
+    const rec = libRec(l);
+    Typing.start({
+      kind: 'library', title: l.title, sub: parts.length > 1 ? 'Part ' + (pi + 1) + ' of ' + parts.length : 'Library',
+      dots: parts.length > 1 && parts.length <= 12 ? parts.map((_, i) => rec[i] ? rec[i].s : -1) : null, dot: pi,
+      text: parts[pi], note: l.note, lang: 'en', target: targetFor(20),
+      back: { label: 'Library', href: '#library' },
+      complete(st, stars) {
+        const L = App.state.lessons['lib-' + l.id] = App.state.lessons['lib-' + l.id] || { ex: {} };
+        const prev = L.ex[pi] || { s: 0, w: 0, a: 0 };
+        L.ex[pi] = { s: Math.max(prev.s, stars), w: Math.max(prev.w, round1(st.wpm)), a: Math.max(prev.a, round1(st.acc)) };
+        recordSession('library', l.id + ':' + pi, 'Library: ' + l.title, st);
+        const last = pi === parts.length - 1;
+        const back = { label: 'Back to Library', act: () => { location.hash = '#library'; render(); } };
+        return {
+          primary: stars === 0 ? { label: 'Try again', act: () => startLibrary(l, pi) } : !last ? { label: 'Next part', act: () => startLibrary(l, pi + 1) } : back,
+          secondary: stars === 0 ? back : { label: 'Try again', act: () => startLibrary(l, pi) }
+        };
+      }
+    });
   }
 
   // ───────────────────────── Choose keys ─────────────────────────

@@ -1,7 +1,7 @@
 // Checks: drills only use learned keys; every lesson character is typeable on every layout;
 // core helpers behave.
 const path = require('path');
-['content.js', 'layouts.js', 'core.js'].forEach(f => require(path.join(__dirname, '..', 'src', f)));
+['content.js', 'library.js', 'layouts.js', 'core.js'].forEach(f => require(path.join(__dirname, '..', 'src', f)));
 const TT = globalThis.TT;
 let fail = 0;
 const bad = (msg) => { fail++; console.log('FAIL', msg); };
@@ -20,6 +20,8 @@ TT.COURSE.forEach((l, idx) => {
 const all = new Set();
 TT.COURSE.forEach(l => l.ex.forEach(e => e.t.split('').forEach(c => all.add(c))));
 TT.STARTERS.forEach(s => s.body.split('').forEach(c => all.add(c)));
+TT.LIBRARY.forEach(l => TT.cleanText(l.text).split('').forEach(c => all.add(c)));
+const libIds = TT.LIBRARY.map(l => l.id); if (new Set(libIds).size !== libIds.length || libIds.some(id => !/^[a-z0-9-]+$/.test(id))) bad('library ids must be unique and use a-z 0-9 -');
 TT.PRESET_ORDER.forEach(id => {
   const lay = TT.buildLayout(id);
   const miss = [...all].filter(c => !lay.charToKey[c]);

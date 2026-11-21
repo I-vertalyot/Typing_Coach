@@ -1095,6 +1095,53 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   TT.WORDS = ('the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us is are was were been has had did said very here more need help write read learn word words question answer example simple short long clear idea ideas text email please thank thanks problem change start finish try ask tell show find keep let mean each many much why where still every again before between same different important right wrong easy hard next last little own part place number sentence letter page list line point step fact case kind week today tomorrow yesterday always never often sometimes usually maybe really sure great better best small big old young high low open close call send check fix explain describe compare summarize translate improve correct rewrite suggest create plan review lesson finger fingers keyboard type typing grammar meaning shorter simpler friendly formal polite context format tone level').split(' ');
 })(globalThis.TT = globalThis.TT || {});
 
+/* Library: fixed lessons. Their text never changes (not by time, mistakes or statistics).
+ *
+ * TO ADD A LESSON, copy this block into the list below and change it:
+ *
+ *   { id: 'my-lesson',            // unique, letters, digits and - only; never change it later (progress is saved under it)
+ *     group: 'Everyday English',  // lessons with the same group are shown together
+ *     title: 'My lesson',
+ *     note: 'One short line shown above the text (optional).',
+ *     text: 'The text to type. Long texts are split into parts of about 260 characters.' },
+ *
+ * Use plain keyboard characters. Smart quotes and long dashes are changed to keyboard characters automatically.
+ */
+(function (TT) {
+  'use strict';
+  TT.LIBRARY = [
+    // ── Warm-up ──
+    { id: 'home-row-warmup', group: 'Warm-up', title: 'Home row warm-up',
+      note: 'Start every session with this. Fingers on the home row, eyes on the screen.',
+      text: 'asdf jkl asdf jkl fjdk slaf jfkd lsla fjfj dkdk slsl alal fdsa lkj ask a lad add salad all fall dad sad flask as alas' },
+    { id: 'rows-warmup', group: 'Warm-up', title: 'Top and bottom rows',
+      note: 'Reach up and down from the home row, then come back.',
+      text: 'qwert yuiop zxcvb nm we were quite power type writer route your trip zebra cab van box mix cave next move bench zone' },
+    { id: 'alphabet', group: 'Warm-up', title: 'Alphabet',
+      note: 'Every letter from a to z, then backwards.',
+      text: 'abcdefghijklmnopqrstuvwxyz zyxwvutsrqponmlkjihgfedcba abc def ghi jkl mno pqr stu vwx yz' },
+
+    // ── Every letter ──
+    { id: 'pangrams', group: 'Every letter', title: 'Pangrams',
+      note: 'Each sentence uses every letter of the alphabet.',
+      text: 'The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump! Sphinx of black quartz, judge my vow. The five boxing wizards jump quickly. Jackdaws love my big sphinx of quartz.' },
+
+    // ── Numbers and symbols ──
+    { id: 'numbers-dates', group: 'Numbers and symbols', title: 'Numbers, dates and times',
+      text: 'The meeting is on 12/05 at 9:30. Room 214, floor 3. Call me at 555 0192 before 17:45. We need 40 chairs, 12 tables and 250 cups. The report has 18 pages and 7 charts. Prices went up by 3.5% in 2026.' },
+    { id: 'punctuation', group: 'Numbers and symbols', title: 'Punctuation',
+      text: 'Wait! Are you sure? Yes, I am. It\'s fine: we can start now. "Ready?" she asked. Bring three things: a pen, a notebook and a well-known map. Don\'t forget it - it\'s important!' },
+
+    // ── Everyday English ──
+    { id: 'morning', group: 'Everyday English', title: 'A normal morning',
+      text: 'I wake up at seven o\'clock and open the window. First, I drink a glass of water. Then I make coffee and eat a small breakfast. I read the news for ten minutes, check my email and write a short list of tasks for the day. At half past eight, I leave the house and walk to the bus stop. The bus is often late, so I use the time to listen to a podcast in English.' },
+    { id: 'polite-email', group: 'Everyday English', title: 'A polite email',
+      text: 'Dear Mr. Smith, thank you for your quick reply. I am writing to ask about the delivery of my order. It was planned for Monday, but it has not arrived yet. Could you please check the status and tell me the new date? I am at home every day after five o\'clock. Thank you for your help. Best regards, Anna' },
+    { id: 'at-the-shop', group: 'Everyday English', title: 'At the shop',
+      text: 'Excuse me, where can I find the milk? It is in the next aisle, on the left. How much is this bag? It is twelve dollars. Can I pay by card? Of course. Do you need a receipt? Yes, please. Thank you, have a nice day!' }
+  ];
+})(globalThis.TT = globalThis.TT || {});
+
 /* Physical keyboard, finger zones and layout presets. */
 (function (TT) {
   'use strict';
@@ -2451,7 +2498,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
   }
 
   // ───────────────────────── Shell ─────────────────────────
-  const NAV = [['learn', 'Learn'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
+  const NAV = [['learn', 'Learn'], ['library', 'Library'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
   function renderShell() {
     const app = document.getElementById('app');
     app.textContent = '';
@@ -2529,7 +2576,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     const hash = (location.hash || '').replace('#', '');
     const m = hash.match(/^lesson-(\d+)$/);
     if (m) return { view: 'lesson', idx: Math.min(COURSE.length, Math.max(1, +m[1])) - 1 };
-    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys'].includes(hash)) return { view: hash };
+    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys', 'library'].includes(hash)) return { view: hash };
     return { view: 'learn' };
   }
   function render() {
@@ -2551,6 +2598,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     else if (r.view === 'options') renderOptions(view);
     else if (r.view === 'steno') renderSteno(view);
     else if (r.view === 'keys') renderPickKeys(view);
+    else if (r.view === 'library') renderLibrary(view);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
   // A link to the page we are already on (for example from the typing screen) still re-renders it.
@@ -3361,6 +3409,64 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     };
     window.addEventListener('blur', () => { down.clear(); chord.clear(); kb.set('down', null); }, { once: true });
     show();
+  }
+
+  // ───────────────────────── Library (fixed lessons) ─────────────────────────
+  // Lessons from src/library.js. The text never changes; only your results are saved (best per part).
+  const libParts = (l) => TT.chunkText(TT.cleanText(l.text, App.layout), 260);
+  const libRec = (l) => (App.state.lessons['lib-' + l.id] && App.state.lessons['lib-' + l.id].ex) || {};
+  function libInfo(l) {
+    const parts = libParts(l), rec = libRec(l);
+    let done = 0, minS = 3, bestW = 0;
+    parts.forEach((_, i) => { const r = rec[i]; if (r && r.s >= 1) { done++; minS = Math.min(minS, r.s); } if (r) bestW = Math.max(bestW, r.w || 0); });
+    return { parts: parts.length, done, stars: done === parts.length ? minS : 0, bestW, next: parts.findIndex((_, i) => !(rec[i] && rec[i].s >= 1)) };
+  }
+  function renderLibrary(view) {
+    const wrap = h('div', { class: 'wrap library' });
+    wrap.append(h('header', { class: 'page-head' },
+      h('h1', { class: 'display' }, 'Library'),
+      h('p', { class: 'lede' }, 'Fixed lessons. The text is always the same, so you can repeat a lesson and compare your results.')));
+    const groups = [];
+    TT.LIBRARY.forEach(l => { let g = groups.find(x => x.name === l.group); if (!g) groups.push(g = { name: l.group || 'Lessons', items: [] }); g.items.push(l); });
+    groups.forEach(g => {
+      wrap.append(h('section', null, sectionHead(g.name),
+        h('ul', { class: 'text-list' }, g.items.map(l => {
+          const info = libInfo(l);
+          const words = (l.text.match(/\S+/g) || []).length;
+          return h('li', { class: 'text-row' },
+            h('div', { class: 'tr-main' },
+              h('strong', null, l.title),
+              h('span', { class: 'muted small' }, words + ' words' + (info.parts > 1 ? ' · ' + info.done + ' of ' + info.parts + ' parts done' : '') + (info.bestW ? ' · best ' + fmtWpm(info.bestW) + ' WPM' : ''))),
+            h('div', { class: 'tr-actions' },
+              info.stars ? TT.starRow(info.stars, 3) : null,
+              h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start')));
+        }))));
+    });
+    view.append(wrap);
+  }
+  function startLibrary(l, pi) {
+    const parts = libParts(l);
+    if (!parts.length) { TT.toast('This lesson has no characters your keyboard can type.'); return; }
+    pi = Math.min(pi || 0, parts.length - 1);
+    const rec = libRec(l);
+    Typing.start({
+      kind: 'library', title: l.title, sub: parts.length > 1 ? 'Part ' + (pi + 1) + ' of ' + parts.length : 'Library',
+      dots: parts.length > 1 && parts.length <= 12 ? parts.map((_, i) => rec[i] ? rec[i].s : -1) : null, dot: pi,
+      text: parts[pi], note: l.note, lang: 'en', target: targetFor(20),
+      back: { label: 'Library', href: '#library' },
+      complete(st, stars) {
+        const L = App.state.lessons['lib-' + l.id] = App.state.lessons['lib-' + l.id] || { ex: {} };
+        const prev = L.ex[pi] || { s: 0, w: 0, a: 0 };
+        L.ex[pi] = { s: Math.max(prev.s, stars), w: Math.max(prev.w, round1(st.wpm)), a: Math.max(prev.a, round1(st.acc)) };
+        recordSession('library', l.id + ':' + pi, 'Library: ' + l.title, st);
+        const last = pi === parts.length - 1;
+        const back = { label: 'Back to Library', act: () => { location.hash = '#library'; render(); } };
+        return {
+          primary: stars === 0 ? { label: 'Try again', act: () => startLibrary(l, pi) } : !last ? { label: 'Next part', act: () => startLibrary(l, pi + 1) } : back,
+          secondary: stars === 0 ? back : { label: 'Try again', act: () => startLibrary(l, pi) }
+        };
+      }
+    });
   }
 
   // ───────────────────────── Choose keys ─────────────────────────
