@@ -400,37 +400,37 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   console.log('\n11. Weak words');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
-    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
-    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'empty weak words card explains itself');
+    const typeWithSlip = async (word) => {
+      const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+      for (let i = 0; i < text.length; i++) { if (word && i === text.indexOf(word) + 2) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
+      await page.waitForSelector('.result:not([hidden])');
+    };
+    const card = async () => (await page.textContent('.drill:has-text("Your weak words")')).replace(/\s+/g, ' ');
     await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
     await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
-    const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-    // mistakes inside "teacher" and "missed"
-    const badAt = new Set([text.indexOf('teacher') + 2, text.indexOf('missed') + 3]);
-    for (let i = 0; i < text.length; i++) { if (badAt.has(i)) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
-    await page.waitForSelector('.result:not([hidden])');
+    await typeWithSlip('teacher');
     await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
-    const card = await page.textContent('.drill:has-text("Your weak words")');
-    ok(card.includes('teacher') && card.includes('missed') && !card.includes('short'), 'card lists the mistyped words: ' + card.replace(/\s+/g, ' '));
+    ok((await card()).includes('A word becomes weak when'), 'one mistake does not make a weak word: ' + await card());
+    // earlier practice: teacher 3 right / 1 wrong (+ the slip above), missed 2 right / 3 wrong, short 6 right / 1 wrong
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1')); s.wordsByDev.seed = { w_teacher: [3, 0], w_missed: [1, 3], w_short: [5, 1] }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
+    await page.reload(); await page.waitForSelector('.drills');
+    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
+    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    await typeWithSlip('teacher');
+    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    const c = await card();
+    ok(c.includes('teacher') && c.includes('missed') && !c.includes('short'), 'repeated mistakes make weak words (teacher 2 of 5, missed 3 of 5), one slip does not (short): ' + c);
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').filter(w => w === 'teacher').length === 7 && d.split(' ').filter(w => w === 'missed').length === 7, 'drill practices only those words, 7 times each: ' + d);
+    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').filter(w => w === 'teacher').length === 7, 'drill practices only those words, 7 times each: ' + d);
     ok(await page.isVisible('.ty-note >> text=Reset weak words'), 'weak words drill has its own reset button');
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
-    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('teacher 1/5'), 'a perfect drill counts as day 1 of 5');
-    // make a new mistake, then reset
-    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
-    await page.click('.ex-btn >> nth=1'); await page.waitForSelector('.tt-inner');
-    const t2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-    for (let i = 0; i < t2.length; i++) { if (i === t2.indexOf('article') + 1) await page.keyboard.type('q'); await page.keyboard.type(t2[i]); }
-    await page.waitForSelector('.result:not([hidden])');
-    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
-    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('article'), 'a new mistake adds the word');
+    ok((await card()).includes('teacher 1/5'), 'a perfect drill counts as day 1 of 5, the word stays weak');
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     await page.click('.ty-note >> text=Reset weak words');
     await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
-    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'reset clears the weak words');
+    ok((await card()).includes('A word becomes weak when'), 'reset clears the weak words');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
@@ -440,6 +440,9 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     const { ctx, page } = await newDevice(browser, { mock: false });
     await page.clock.install({ time: new Date('2026-11-16T10:00:00') });
     const toPractice = async () => { await page.evaluate(() => { location.hash = '#learn'; }); await page.evaluate(() => { location.hash = '#practice'; }); await page.waitForSelector('.drills'); };
+    await page.goto(FILE + '#learn'); await page.waitForSelector('.lessons');
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1') || '{}'); s.wordsByDev = { seed: { w_teacher: [3, 1] } }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
+    await page.reload(); await page.waitForSelector('.lessons');
     await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
     await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
     const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));

@@ -168,7 +168,8 @@
       wordsByDev: {},    // dev → { "w_word": [typed without mistake, typed with a mistake] }
       wordsResetAt: 0,
       wordDays: {},      // "w_word" → days ('YYYY-MM-DD') when the word was typed right 7 times in a row
-      learnedWords: {}   // "w_word" → time it became a strong learned word
+      learnedWords: {},  // "w_word" → time it became a strong learned word
+      weakMarked: {}     // "w_word" → time it became a weak word (it stays weak until learned)
     };
   };
 
@@ -184,7 +185,7 @@
 
     // A reset on any device wins over older progress everywhere.
     const rs = Math.max(L.resetAt || 0, R.resetAt || 0);
-    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordDays: {}, learnedWords: {}, textProg: {}, resetAt: rs });
+    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordDays: {}, learnedWords: {}, weakMarked: {}, textProg: {}, resetAt: rs });
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
@@ -194,8 +195,8 @@
     if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
     S.keysResetAt = ks;
     const ws = Math.max(L.wordsResetAt || 0, R.wordsResetAt || 0);
-    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordDays: {}, wordsResetAt: ws }); vsLocal = true; }
-    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordDays: {}, wordsResetAt: ws }); vsRemote = true; }
+    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsLocal = true; }
+    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsRemote = true; }
     S.wordsResetAt = ws;
 
     // settings: newest wins
@@ -275,6 +276,10 @@
       wd[k] = u;
     });
     S.wordDays = wd;
+    const wm = Object.assign({}, R.weakMarked || {});
+    Object.keys(L.weakMarked || {}).forEach(k => { if (!(k in wm)) vsRemote = true; wm[k] = Math.max(wm[k] || 0, L.weakMarked[k]); });
+    Object.keys(R.weakMarked || {}).forEach(k => { if (!((L.weakMarked || {})[k])) vsLocal = true; });
+    S.weakMarked = wm;
     const lw = Object.assign({}, R.learnedWords || {});
     Object.keys(L.learnedWords || {}).forEach(k => { if (!(k in lw)) vsRemote = true; lw[k] = Math.max(lw[k] || 0, L.learnedWords[k]); });
     Object.keys(R.learnedWords || {}).forEach(k => { if (!((L.learnedWords || {})[k])) vsLocal = true; });
