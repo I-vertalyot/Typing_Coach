@@ -415,6 +415,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
     ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').length >= 18, 'drill practices only those words: ' + d);
+    ok(await page.isVisible('.ty-note >> text=Reset weak words'), 'weak words drill has its own reset button');
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
     ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'words typed correctly many times stop being weak');
@@ -426,7 +427,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.waitForSelector('.result:not([hidden])');
     await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
     ok((await page.textContent('.drill:has-text("Your weak words")')).includes('article'), 'a new mistake adds the word');
-    await page.click('.drill:has-text("Your weak words") >> text=Reset');
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    await page.click('.ty-note >> text=Reset weak words');
     await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
     ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'reset clears the weak words');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));

@@ -800,7 +800,8 @@
       h('div', { class: 'ty-title' }, h('strong', null, sess.title), sess.sub ? h('span', { class: 'muted' }, sess.sub) : null, dots));
 
     const listen = h('button', { class: 'btn ghost small', type: 'button', 'data-listen': '1', hidden: !P.tts, onclick: () => speak(text, sess.lang) }, icon('speaker'), 'Listen');
-    const noteRow = h('div', { class: 'ty-note' }, sess.note ? h('p', null, sess.note) : h('p', { class: 'muted' }, 'Type the text below. Keep your eyes on the screen.'), listen);
+    const extraBtn = sess.extra ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: sess.extra.act }, icon('retry'), sess.extra.label) : null;
+    const noteRow = h('div', { class: 'ty-note' }, sess.note ? h('p', null, sess.note) : h('p', { class: 'muted' }, 'Type the text below. Keep your eyes on the screen.'), h('div', { class: 'cta-row' }, listen, extraBtn));
 
     const inner = h('div', { class: 'tt-inner' });
     const spans = chars.map((c, i) => {
@@ -1409,7 +1410,7 @@
       (() => { const ww = weakWords(8); return drillCard('Your weak words',
         ww.length ? h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' }, x.w))) : h('span', { class: 'muted small' }, 'Words you often mistype appear here after some practice.'),
         ww.length ? () => startDrill('weakwords') : null,
-        ww.length ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null); })(),
+        hasWordStats() ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null); })(),
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
@@ -1504,6 +1505,7 @@
     TT.toast('Weak words reset.');
     render();
   }
+  const hasWordStats = () => Object.values(App.state.wordsByDev || {}).some(m => m && Object.keys(m).length);
   const hasKeyStats = () => Object.values(App.state.keysByDev || {}).some(m => m && Object.keys(m).length);
   function resetKeysButton(label) {
     return h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetKeyStats }, icon('retry'), label || 'Reset');
@@ -1706,7 +1708,7 @@
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({
-      kind: 'drill', title, sub: secs ? DRILL_TIMES.find(d => d[0] === secs)[1] + ' practice' : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
+      kind: 'drill', title, extra: kind === 'weakwords' ? { label: 'Reset weak words', act: resetWordStats } : null, sub: secs ? DRILL_TIMES.find(d => d[0] === secs)[1] + ' practice' : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         recordSession('drill', kind, title, st);
