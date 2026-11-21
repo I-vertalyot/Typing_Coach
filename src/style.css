@@ -569,7 +569,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .ww.good { background: color-mix(in oklab, var(--good) 12%, var(--sheet)); border-color: color-mix(in oklab, var(--good) 30%, var(--rule)); }
 
 /* ── Riso poster look ── */
-body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 100;
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
   background-image: radial-gradient(var(--grain-a) 1px, transparent 1.2px), radial-gradient(var(--grain-b) 1px, transparent 1.3px);
   background-size: 5px 5px, 7px 7px; background-position: 0 0, 2px 3px; }
 .display, h1, .tip h3, .cont-title, .res-top h2, .brand { font-family: var(--font-display); font-weight: 400; font-variation-settings: normal; letter-spacing: -0.01em; }
