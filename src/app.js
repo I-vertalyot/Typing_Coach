@@ -400,6 +400,9 @@
   function applySettings() {
     applyLayout();
     document.documentElement.dataset.size = App.state.settings.size || 'm';
+    const th = App.state.settings.theme || 'auto';
+    document.documentElement.classList.toggle('force-light', th === 'light');
+    document.documentElement.classList.toggle('force-dark', th === 'dark');
   }
 
   // ───────────────────────── Shell ─────────────────────────
@@ -2253,6 +2256,8 @@
         h('p', { class: 'opt-q' }, 'Show'),
         check('showKb', 'On-screen keyboard'),
         check('showHands', 'Hands with the finger to use'),
+        h('p', { class: 'opt-q' }, 'Theme'),
+        h('div', { class: 'row-inline' }, [['auto', 'Match system'], ['light', 'Light (peach)'], ['dark', 'Dark (green)']].map(([v, l]) => radio('theme', v, l, S.theme || 'auto', x => set('theme', x)))),
         h('p', { class: 'opt-q' }, 'Typing font'),
         h('div', { class: 'row-inline' }, [['sans', 'Sans-serif (easy to read)'], ['mono', 'Monospace (every letter the same width)']].map(([v, l]) => radio('font', v, l, S.typeFont || 'sans', x => set('typeFont', x)))),
         h('p', { class: 'opt-q' }, 'Text view'),

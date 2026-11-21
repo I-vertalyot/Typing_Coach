@@ -464,6 +464,21 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n14. Theme switch');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false, dark: true });
+    const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const darkBg = await bg();
+    await page.goto(FILE + '#options'); await page.waitForSelector('.options');
+    await page.check('#opt-theme-light');
+    ok((await bg()) === 'rgb(246, 217, 198)', 'Light makes the page peach in a dark system: ' + await bg());
+    await page.check('#opt-theme-dark');
+    ok((await bg()) === darkBg, 'Dark makes it green again');
+    await page.check('#opt-theme-auto');
+    ok((await bg()) === darkBg, 'Match system follows the system');
+    await ctx.close();
+  }
+
   console.log('\n13. Library (fixed lessons)');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });

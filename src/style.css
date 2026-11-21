@@ -616,3 +616,45 @@ h2, h3, .lr-title { font-weight: 800; }
 .library .text-row { gap: 18px; }
 .lib-count { margin-left: auto; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--ink); white-space: nowrap; }
 .lib-count.zero { border-color: var(--rule); color: var(--ink-3); }
+
+/* Theme switch in Options (stronger than the system theme) */
+:root.force-light.force-light {
+  --paper: #F6D9C6;
+  --sheet: #FBE8DB;
+  --ink: #22392F;
+  --ink-2: #4B5E54;
+  --ink-3: #6E7C73;
+  --rule: #DDB9A2;
+  --mark: #F2652B;
+  --mark-ink: #FFF4EC;
+  --pen: #C2431A;
+  --good: #1E7A4C;
+  --bad: #B3261E;
+  --bad-bg: #F8CDBF;
+  --focus: #F2652B;
+  --f-pinky: #FF48B0; --f-ring: #0078BF; --f-middle: #00A95C; --f-lindex: #FFE800; --f-rindex: #765BA7; --f-thumb: #8FA096;
+  --i-pinky: #1A0612; --i-ring: #FFFFFF; --i-middle: #02160C; --i-lindex: #1F1B00; --i-rindex: #FFFFFF; --i-thumb: #22392F;
+  --key: #2E4A3E; --key-edge: #15241D; --key-ink: #F6D9C6; --key-dim: #3A5649; --kb-bed: #22392F;
+  --band: #22392F; --band-ahead: #2C463A; --band-ink: #F6D9C6;
+  --chart: #F2652B;
+  --grain-a: rgba(34, 57, 47, .13); --grain-b: rgba(242, 101, 43, .11);
+  --font-display: "Archivo Black", "Arial Black", Impact, sans-serif;
+  --font-ui: "Archivo", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --shadow: 0 1px 0 rgba(34, 57, 47, .06), 0 10px 28px -16px rgba(34, 57, 47, .35);
+  color-scheme: light;
+}
+:root.force-dark.force-dark {
+  --paper: #12211A; --sheet: #1A2E24; --ink: #F6D9C6; --ink-2: #D9BBA7; --ink-3: #A68F80; --rule: #2E4A3D;
+  --mark: #FF7A45; --mark-ink: #12211A; --pen: #FF9A6B; --good: #5BD08B; --bad: #FF6B57; --bad-bg: #3E1F18; --focus: #FF9A6B;
+  --f-pinky: #FF48B0; --f-ring: #2B9BE8; --f-middle: #00B866; --f-lindex: #FFE800; --f-rindex: #9C7FD6; --f-thumb: #6E8577;
+  --i-pinky: #1A0612; --i-ring: #04121E; --i-middle: #02160C; --i-lindex: #1F1B00; --i-rindex: #120A24; --i-thumb: #F6D9C6;
+  --key: #22392F; --key-edge: #0A140F; --key-ink: #F6D9C6; --key-dim: #1B2E25; --kb-bed: #0C1712;
+  --band: #0C1712; --band-ahead: #16271F; --band-ink: #F6D9C6;
+  --chart: #FF7A45;
+  --grain-a: rgba(246, 217, 198, .07); --grain-b: rgba(255, 122, 69, .06);
+  --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 12px 30px -16px rgba(0, 0, 0, .7);
+  color-scheme: dark;
+}
+:root.force-dark .riso-letter { mix-blend-mode: screen; }
+:root.force-light .riso-letter { mix-blend-mode: multiply; }
