@@ -1327,7 +1327,11 @@
     const parts = libParts(l), rec = libRec(l);
     let done = 0, minS = 3, bestW = 0;
     parts.forEach((_, i) => { const r = rec[i]; if (r && r.s >= 1) { done++; minS = Math.min(minS, r.s); } if (r) bestW = Math.max(bestW, r.w || 0); });
-    return { parts: parts.length, done, stars: done === parts.length ? minS : 0, bestW, next: parts.findIndex((_, i) => !(rec[i] && rec[i].s >= 1)) };
+    // Times finished: the synced counter, or (for finishes before the counter existed) the history.
+    const counted = (TT.sumByDevice(App.state.libDoneByDev || {})['l_' + l.id]) || 0;
+    const lastRef = l.id + ':' + (parts.length - 1);
+    const fromHistory = App.state.history.filter(x => x.k === 'library' && x.r === lastRef && (x.a || 0) >= 90).length;
+    return { parts: parts.length, done, stars: done === parts.length ? minS : 0, bestW, next: parts.findIndex((_, i) => !(rec[i] && rec[i].s >= 1)), times: Math.max(counted, fromHistory) };
   }
   function renderLibrary(view) {
     const wrap = h('div', { class: 'wrap library' });
@@ -1345,6 +1349,7 @@
             h('div', { class: 'tr-main' },
               h('strong', null, l.title),
               h('span', { class: 'muted small' }, words + ' words' + (info.parts > 1 ? ' · ' + info.done + ' of ' + info.parts + ' parts done' : '') + (info.bestW ? ' · best ' + fmtWpm(info.bestW) + ' WPM' : ''))),
+            h('span', { class: 'lib-count' + (info.times ? '' : ' zero'), title: 'Times you finished this lesson' }, info.times ? 'Finished ' + info.times + (info.times === 1 ? ' time' : ' times') : 'Not finished yet'),
             h('div', { class: 'tr-actions' },
               info.stars ? TT.starRow(info.stars, 3) : null,
               h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start')));
@@ -1366,8 +1371,12 @@
         const L = App.state.lessons['lib-' + l.id] = App.state.lessons['lib-' + l.id] || { ex: {} };
         const prev = L.ex[pi] || { s: 0, w: 0, a: 0 };
         L.ex[pi] = { s: Math.max(prev.s, stars), w: Math.max(prev.w, round1(st.wpm)), a: Math.max(prev.a, round1(st.acc)) };
-        recordSession('library', l.id + ':' + pi, 'Library: ' + l.title, st);
         const last = pi === parts.length - 1;
+        if (last && stars >= 1) {
+          const D = App.state.libDoneByDev[App.dev] = App.state.libDoneByDev[App.dev] || {};
+          D['l_' + l.id] = Math.max(D['l_' + l.id] || 0, libInfo(l).times) + 1;
+        }
+        recordSession('library', l.id + ':' + pi, 'Library: ' + l.title, st);
         const back = { label: 'Back to Library', act: () => { location.hash = '#library'; render(); } };
         return {
           primary: stars === 0 ? { label: 'Try again', act: () => startLibrary(l, pi) } : !last ? { label: 'Next part', act: () => startLibrary(l, pi + 1) } : back,

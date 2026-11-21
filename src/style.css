@@ -612,3 +612,7 @@ h2, h3, .lr-title { font-weight: 800; }
   background: linear-gradient(90deg, var(--band) 0, transparent 24%, transparent 90%, var(--band-ahead) 100%); }
 .learn-top, .course { position: relative; z-index: 1; }
 .riso-letter { font-size: 260px; }
+
+.library .text-row { gap: 18px; }
+.lib-count { margin-left: auto; font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; border: 1.5px solid var(--ink); white-space: nowrap; }
+.lib-count.zero { border-color: var(--rule); color: var(--ink-3); }

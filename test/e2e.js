@@ -482,6 +482,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.library');
     ok(await page.isVisible(startRow + ' .stars'), 'best stars are shown');
+    ok((await page.textContent(startRow)).includes('Finished 2 times'), 'the lesson shows it was finished 2 times');
+    ok((await page.textContent('.library .text-row:has-text("Alphabet")')).includes('Not finished yet'), 'other lessons show not finished yet');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
