@@ -164,7 +164,9 @@
       textProg: {},      // textId → { next, best, laps }
       dismissed: {},
       resetAt: 0,        // progress before this time was reset on some device
-      keysResetAt: 0     // key statistics before this time were reset on some device
+      keysResetAt: 0,    // key statistics before this time were reset on some device
+      wordsByDev: {},    // dev → { "w_word": [typed without mistake, typed with a mistake] }
+      wordsResetAt: 0
     };
   };
 
@@ -180,7 +182,7 @@
 
     // A reset on any device wins over older progress everywhere.
     const rs = Math.max(L.resetAt || 0, R.resetAt || 0);
-    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, textProg: {}, resetAt: rs });
+    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, textProg: {}, resetAt: rs });
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
@@ -189,6 +191,10 @@
     if ((L.keysResetAt || 0) < ks) { L = Object.assign({}, L, { keysByDev: {}, keysResetAt: ks }); vsLocal = true; }
     if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
     S.keysResetAt = ks;
+    const ws = Math.max(L.wordsResetAt || 0, R.wordsResetAt || 0);
+    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordsResetAt: ws }); vsLocal = true; }
+    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordsResetAt: ws }); vsRemote = true; }
+    S.wordsResetAt = ws;
 
     // settings: newest wins
     if ((L.settingsAt || 0) >= (R.settingsAt || 0)) {
@@ -230,7 +236,7 @@
     S.history = Array.from(seen.values()).sort((a, b) => a.t - b.t).slice(-HISTORY_CAP);
 
     // per-device counters: my device from local, other devices from remote (local copy if remote lacks it)
-    ['keysByDev', 'dailyByDev'].forEach(field => {
+    ['keysByDev', 'dailyByDev', 'wordsByDev'].forEach(field => {
       const out = {};
       const devs = new Set(Object.keys(L[field] || {}).concat(Object.keys(R[field] || {})));
       devs.forEach(dev => {

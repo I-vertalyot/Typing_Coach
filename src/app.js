@@ -740,6 +740,19 @@
     const KB = S.keysByDev[App.dev] = S.keysByDev[App.dev] || {};
     Object.keys(st.hits).forEach(c => { const f = keyField(c); KB[f] = KB[f] || [0, 0]; KB[f][0] += st.hits[c]; });
     Object.keys(st.misses).forEach(c => { const f = keyField(c); KB[f] = KB[f] || [0, 0]; KB[f][1] += st.misses[c]; });
+    // Words: keep only words that were mistyped at least once (and how often they were right since).
+    if (st.words) {
+      const WB = S.wordsByDev[App.dev] = S.wordsByDev[App.dev] || {};
+      Object.keys(st.words).forEach(w => {
+        const f = 'w_' + w.replace(/'/g, '');
+        if (!f.match(/^w_[a-z]+$/)) return;
+        const [okN, badN] = st.words[w];
+        if (!WB[f] && !badN) return;
+        WB[f] = WB[f] || [0, 0]; WB[f][0] += okN; WB[f][1] += badN;
+      });
+      const keys = Object.keys(WB);
+      if (keys.length > 500) keys.sort((a, b) => (WB[a][1] / (WB[a][0] + WB[a][1] + 1)) - (WB[b][1] / (WB[b][0] + WB[b][1] + 1))).slice(0, keys.length - 500).forEach(k => delete WB[k]);
+    }
     saveState();
   }
 
@@ -941,7 +954,21 @@
       if (hands) hands.set([]);
       hint.textContent = '';
       const ms = limit ? Math.max(ms0, 1000) : Math.max(active, 1000);
-      const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: limit ? pos : chars.length, hits, misses, errors, strokes, timeUp: !!timeUp };
+      // Which words were typed with a mistake (letters only, lowercase).
+      const words = {};
+      const re = /[A-Za-z']+/g;
+      let m;
+      while ((m = re.exec(text))) {
+        const a = m.index, b = a + m[0].length;
+        if (b > pos) break;
+        const w = m[0].toLowerCase().replace(/^'+|'+$/g, '');
+        if (w.length < 2 || !/^[a-z']+$/.test(w)) continue;
+        let bad = false;
+        for (let i = a; i < b; i++) if (missAt.has(i)) { bad = true; break; }
+        const e = words[w] = words[w] || [0, 0];
+        e[bad ? 1 : 0]++;
+      }
+      const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: limit ? pos : chars.length, hits, misses, errors, strokes, timeUp: !!timeUp, words };
       const stars = TT.stars(st.acc, st.wpm, sess.target || 20);
       const out = sess.complete(st, stars) || {};
       tw.classList.add('is-done');
@@ -1379,6 +1406,10 @@
         weak.length ? () => startDrill('weak') : null, hasKeyStats() ? resetKeysButton() : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
+      (() => { const ww = weakWords(8); return drillCard('Your weak words',
+        ww.length ? h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' }, x.w))) : h('span', { class: 'muted small' }, 'Words you often mistype appear here after some practice.'),
+        ww.length ? () => startDrill('weakwords') : null,
+        ww.length ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null); })(),
       handCard(),
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
@@ -1439,6 +1470,39 @@
     return h('div', { class: 'panel drill' },
       h('h3', null, title), h('div', { class: 'drill-body' }, body),
       extra ? h('div', { class: 'cta-row' }, start, extra) : start);
+  }
+  // Words the learner often mistypes: [{w, ok, bad, score}]
+  function weakWords(n) {
+    const tot = TT.sumByDevice(App.state.wordsByDev);
+    return Object.keys(tot).map(k => { const [ok, bad] = tot[k]; return { w: k.slice(2), ok, bad, score: (bad + 0.5) / (ok + bad + 1) }; })
+      .filter(x => x.bad > 0 && x.w.length > 1 && x.score > 0.2)
+      .sort((a, b) => b.score - a.score || b.bad - a.bad)
+      .slice(0, n || 12);
+  }
+  function weakWordsDrill(count) {
+    const weak = weakWords(15);
+    if (!weak.length) return '';
+    const total = weak.reduce((a, x) => a + x.score, 0);
+    const out = [];
+    for (let i = 0; i < count; i++) {
+      let w;
+      for (let t = 0; t < 10; t++) {
+        let r = Math.random() * total; w = weak[0].w;
+        for (const x of weak) { r -= x.score; if (r <= 0) { w = x.w; break; } }
+        if (weak.length === 1 || w !== out[out.length - 1]) break;
+      }
+      out.push(w);
+    }
+    return out.join(' ');
+  }
+  async function resetWordStats() {
+    const ok = await TT.dialog({ title: 'Reset weak words?', body: 'The list of words you often mistype is deleted on all your devices. Lessons, stars and history stay.', ok: 'Reset weak words', danger: true });
+    if (!ok) return;
+    App.state.wordsByDev = {};
+    App.state.wordsResetAt = Date.now();
+    saveState();
+    TT.toast('Weak words reset.');
+    render();
   }
   const hasKeyStats = () => Object.values(App.state.keysByDev || {}).some(m => m && Object.keys(m).length);
   function resetKeysButton(label) {
@@ -1612,7 +1676,10 @@
     const N = secs ? Math.ceil(secs / 60 * 90) + 10 : 18;
     const learned = TT.allowedChars(COURSE, learnedIndex());
     let text, title;
-    if (kind === 'weak') {
+    if (kind === 'weakwords') {
+      text = weakWordsDrill(N);
+      title = 'Weak words';
+    } else if (kind === 'weak') {
       text = weakDrill(N);
       title = 'Weak keys: ' + Array.from(new Set(weakKeys(6).map(k => k.c.toLowerCase()))).join(' ').toUpperCase();
     } else if (kind === 'known') {

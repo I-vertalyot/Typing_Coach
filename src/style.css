@@ -553,3 +553,6 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .common-body { display: grid; gap: 8px; justify-items: start; }
 
 .heat-reset { justify-content: center; margin-top: 6px; }
+
+.weak-words { display: flex; flex-wrap: wrap; gap: 5px; }
+.ww { font-size: 14px; padding: 1px 8px; border-radius: 6px; background: color-mix(in oklab, var(--bad) 10%, var(--sheet)); border: 1px solid color-mix(in oklab, var(--bad) 25%, var(--rule)); }

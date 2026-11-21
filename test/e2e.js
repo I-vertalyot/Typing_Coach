@@ -397,6 +397,42 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n11. Weak words');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'empty weak words card explains itself');
+    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
+    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    // mistakes inside "teacher" and "missed"
+    const badAt = new Set([text.indexOf('teacher') + 2, text.indexOf('missed') + 3]);
+    for (let i = 0; i < text.length; i++) { if (badAt.has(i)) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
+    await page.waitForSelector('.result:not([hidden])');
+    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    const card = await page.textContent('.drill:has-text("Your weak words")');
+    ok(card.includes('teacher') && card.includes('missed') && !card.includes('short'), 'card lists the mistyped words: ' + card.replace(/\s+/g, ' '));
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').length >= 18, 'drill practices only those words: ' + d);
+    await typeExercise(page);
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'words typed correctly many times stop being weak');
+    // make a new mistake, then reset
+    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
+    await page.click('.ex-btn >> nth=1'); await page.waitForSelector('.tt-inner');
+    const t2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    for (let i = 0; i < t2.length; i++) { if (i === t2.indexOf('article') + 1) await page.keyboard.type('q'); await page.keyboard.type(t2[i]); }
+    await page.waitForSelector('.result:not([hidden])');
+    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('article'), 'a new mistake adds the word');
+    await page.click('.drill:has-text("Your weak words") >> text=Reset');
+    await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
+    ok((await page.textContent('.drill:has-text("Your weak words")')).includes('appear here after some practice'), 'reset clears the weak words');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   console.log('\n9. Common words: how many');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
