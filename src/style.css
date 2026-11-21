@@ -551,3 +551,5 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 .len-check { width: 14px; color: var(--good); font-weight: 700; }
 
 .common-body { display: grid; gap: 8px; justify-items: start; }
+
+.heat-reset { justify-content: center; margin-top: 6px; }

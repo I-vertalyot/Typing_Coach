@@ -266,6 +266,14 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     const leftText = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
     ok(/^[qwertasdfgzxcvb ]+$/.test(leftText) && leftText.length > 20, 'left-hand drill uses only left-hand letters: ' + leftText);
     await shot(page, '14-left-hand');
+    // reset the weak keys
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    await page.click('.drill >> nth=0 >> text=Reset');
+    await page.click('.dialog .btn.danger');
+    await page.waitForSelector('.drills');
+    ok((await page.textContent('.drill >> nth=0')).includes('Type a few lessons first'), 'reset clears the weak keys');
+    const st2 = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    ok(Object.keys(st2.keysByDev).length === 0 && st2.keysResetAt > 0 && st2.history.length > 0, 'key statistics cleared, history kept');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }

@@ -16,7 +16,7 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 - **Practice texts from Claude** on any topic and level (A2–C1).
 - **Common words.** Practice the 50, 100, 200, 500 or 1000 most common English words.
 - **Practice length.** The quick drills last 18 words, or 1, 2, 3, 5 or 10 minutes with a countdown.
-- **Weak keys drill.** Every word practices one of your weak keys, and weaker keys come more often. The words use every key you have practiced and rarely repeat. Weak capitals and marks (? , . and so on) are practiced too.
+- **Weak keys drill.** Every word practices one of your weak keys, and weaker keys come more often. The words use every key you have practiced and rarely repeat. Weak capitals and marks (? , . and so on) are practiced too. A Reset button clears the key statistics on all devices.
 - **Choose keys.** Click the keys you want on the keyboard (or type them) and practice only those keys, or real words that contain them. Quick choices: rows, one hand, your weak keys.
 - **Steno basics.** The technique American court reporters use: press several keys at once to write a whole word. Your normal keyboard works as a steno machine with Plover's free key mapping. 5 lessons: the steno keys, one-key words, words in one chord, chord letters (D = TK, B = PW...) and common short forms.
 - **Progress.** Speed and accuracy charts, minutes per day against a daily goal, mistakes by key on a keyboard heatmap, and drills for your weak keys.

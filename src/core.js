@@ -163,7 +163,8 @@
       dailyByDev: {},    // dev → { 'YYYY-MM-DD': seconds }
       textProg: {},      // textId → { next, best, laps }
       dismissed: {},
-      resetAt: 0         // progress before this time was reset on some device
+      resetAt: 0,        // progress before this time was reset on some device
+      keysResetAt: 0     // key statistics before this time were reset on some device
     };
   };
 
@@ -183,6 +184,11 @@
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
+    // A reset of the key statistics on any device clears older key statistics everywhere.
+    const ks = Math.max(L.keysResetAt || 0, R.keysResetAt || 0);
+    if ((L.keysResetAt || 0) < ks) { L = Object.assign({}, L, { keysByDev: {}, keysResetAt: ks }); vsLocal = true; }
+    if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
+    S.keysResetAt = ks;
 
     // settings: newest wins
     if ((L.settingsAt || 0) >= (R.settingsAt || 0)) {

@@ -563,6 +563,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
 
 .common-body { display: grid; gap: 8px; justify-items: start; }
 
+.heat-reset { justify-content: center; margin-top: 6px; }
+
 </style>
 </head>
 <body>
@@ -1431,7 +1433,8 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       dailyByDev: {},    // dev → { 'YYYY-MM-DD': seconds }
       textProg: {},      // textId → { next, best, laps }
       dismissed: {},
-      resetAt: 0         // progress before this time was reset on some device
+      resetAt: 0,        // progress before this time was reset on some device
+      keysResetAt: 0     // key statistics before this time were reset on some device
     };
   };
 
@@ -1451,6 +1454,11 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
+    // A reset of the key statistics on any device clears older key statistics everywhere.
+    const ks = Math.max(L.keysResetAt || 0, R.keysResetAt || 0);
+    if ((L.keysResetAt || 0) < ks) { L = Object.assign({}, L, { keysByDev: {}, keysResetAt: ks }); vsLocal = true; }
+    if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
+    S.keysResetAt = ks;
 
     // settings: newest wins
     if ((L.settingsAt || 0) >= (R.settingsAt || 0)) {
@@ -3381,7 +3389,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
     const learned = TT.allowedChars(COURSE, learnedIndex());
     const drills = h('section', { class: 'drills' },
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
-        weak.length ? () => startDrill('weak') : null),
+        weak.length ? () => startDrill('weak') : null, hasKeyStats() ? resetKeysButton() : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       handCard(),
@@ -3439,10 +3447,24 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       h('div', { class: 'cta-row' }, btn('L', 'Left hand'), btn('R', 'Right hand')));
   }
 
-  function drillCard(title, body, act) {
+  function drillCard(title, body, act, extra) {
+    const start = h('button', { class: 'btn ghost small', type: 'button', disabled: !act, onclick: act || null }, icon('play'), 'Start');
     return h('div', { class: 'panel drill' },
       h('h3', null, title), h('div', { class: 'drill-body' }, body),
-      h('button', { class: 'btn ghost small', type: 'button', disabled: !act, onclick: act || null }, icon('play'), 'Start'));
+      extra ? h('div', { class: 'cta-row' }, start, extra) : start);
+  }
+  const hasKeyStats = () => Object.values(App.state.keysByDev || {}).some(m => m && Object.keys(m).length);
+  function resetKeysButton(label) {
+    return h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetKeyStats }, icon('retry'), label || 'Reset');
+  }
+  async function resetKeyStats() {
+    const ok = await TT.dialog({ title: 'Reset weak keys?', body: 'Your key statistics are deleted on all your devices: weak keys, mistakes by key and hand accuracy. Lessons, stars and history stay.', ok: 'Reset weak keys', danger: true });
+    if (!ok) return;
+    App.state.keysByDev = {};
+    App.state.keysResetAt = Date.now();
+    saveState();
+    TT.toast('Weak keys reset. New statistics start now.');
+    render();
   }
 
   function textRow(t, own) {
@@ -3996,6 +4018,7 @@ ins { color: var(--pen); text-decoration: none; font-variation-settings: "CASL" 
       h('p', { class: 'small muted' }, 'Darker red = more mistakes. Gray keys need more practice before they show.'),
       h('div', { class: 'kb-wrap' }, kb.el),
       h('div', { class: 'heat-legend small muted' }, 'fewer mistakes', h('span', { class: 'heat-ramp' }), 'more mistakes'),
+      hasKeyStats() ? h('div', { class: 'cta-row heat-reset' }, resetKeysButton('Reset key statistics')) : null,
       weak.length ? h('div', { class: 'weak' },
         h('table', { class: 'tbl' }, h('thead', null, h('tr', null, h('th', null, 'Key'), h('th', null, 'Correct'), h('th', null, 'Presses'))),
           h('tbody', null, weak.map(k => h('tr', null, h('td', null, TT.keycap(k.c === ' ' ? 'Space' : k.c)), h('td', null, Math.round(k.acc * 100) + '%'), h('td', null, String(k.n)))))),

@@ -62,6 +62,17 @@ if (again.changedVsRemote || again.changedVsLocal) bad('merge of identical state
 const sum = TT.sumByDevice(m.state.keysByDev);
 if (sum.a[0] !== 15 || sum.a[1] !== 3) bad('sumByDevice ' + JSON.stringify(sum));
 
+// 5b. key statistics reset wins over older stats on other devices, keeps progress
+const X = TT.defaultState(), Y = TT.defaultState();
+X.keysByDev = {}; X.keysResetAt = 1000; X.history = [{ id: 'h1', t: 5 }];
+Y.keysByDev = { devB: { k97: [9, 3] } }; Y.keysResetAt = 0; Y.history = [{ id: 'h2', t: 6 }];
+const mk = TT.mergeState(X, Y, 'devA');
+if (Object.keys(mk.state.keysByDev).length !== 0) bad('key reset should clear older key stats: ' + JSON.stringify(mk.state.keysByDev));
+if (mk.state.keysResetAt !== 1000 || !mk.changedVsRemote) bad('key reset should be pushed');
+if (mk.state.history.length !== 2) bad('key reset must keep history');
+const mk2 = TT.mergeState(Y, X, 'devB');
+if (Object.keys(mk2.state.keysByDev).length !== 0 || !mk2.changedVsLocal) bad('device B should accept the key reset');
+
 // 6. diff
 const d = TT.diffWords('I am agree with you', 'I agree with you.');
 console.log('diff:', JSON.stringify(d));

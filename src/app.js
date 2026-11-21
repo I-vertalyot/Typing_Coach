@@ -1376,7 +1376,7 @@
     const learned = TT.allowedChars(COURSE, learnedIndex());
     const drills = h('section', { class: 'drills' },
       drillCard('Your weak keys', weak.length ? h('span', { class: 'kcs' }, weak.map(k => TT.keycap(k.c === ' ' ? 'Space' : k.c))) : h('span', { class: 'muted small' }, 'Type a few lessons first. Then your weakest keys appear here.'),
-        weak.length ? () => startDrill('weak') : null),
+        weak.length ? () => startDrill('weak') : null, hasKeyStats() ? resetKeysButton() : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       handCard(),
@@ -1434,10 +1434,24 @@
       h('div', { class: 'cta-row' }, btn('L', 'Left hand'), btn('R', 'Right hand')));
   }
 
-  function drillCard(title, body, act) {
+  function drillCard(title, body, act, extra) {
+    const start = h('button', { class: 'btn ghost small', type: 'button', disabled: !act, onclick: act || null }, icon('play'), 'Start');
     return h('div', { class: 'panel drill' },
       h('h3', null, title), h('div', { class: 'drill-body' }, body),
-      h('button', { class: 'btn ghost small', type: 'button', disabled: !act, onclick: act || null }, icon('play'), 'Start'));
+      extra ? h('div', { class: 'cta-row' }, start, extra) : start);
+  }
+  const hasKeyStats = () => Object.values(App.state.keysByDev || {}).some(m => m && Object.keys(m).length);
+  function resetKeysButton(label) {
+    return h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetKeyStats }, icon('retry'), label || 'Reset');
+  }
+  async function resetKeyStats() {
+    const ok = await TT.dialog({ title: 'Reset weak keys?', body: 'Your key statistics are deleted on all your devices: weak keys, mistakes by key and hand accuracy. Lessons, stars and history stay.', ok: 'Reset weak keys', danger: true });
+    if (!ok) return;
+    App.state.keysByDev = {};
+    App.state.keysResetAt = Date.now();
+    saveState();
+    TT.toast('Weak keys reset. New statistics start now.');
+    render();
   }
 
   function textRow(t, own) {
@@ -1991,6 +2005,7 @@
       h('p', { class: 'small muted' }, 'Darker red = more mistakes. Gray keys need more practice before they show.'),
       h('div', { class: 'kb-wrap' }, kb.el),
       h('div', { class: 'heat-legend small muted' }, 'fewer mistakes', h('span', { class: 'heat-ramp' }), 'more mistakes'),
+      hasKeyStats() ? h('div', { class: 'cta-row heat-reset' }, resetKeysButton('Reset key statistics')) : null,
       weak.length ? h('div', { class: 'weak' },
         h('table', { class: 'tbl' }, h('thead', null, h('tr', null, h('th', null, 'Key'), h('th', null, 'Correct'), h('th', null, 'Presses'))),
           h('tbody', null, weak.map(k => h('tr', null, h('td', null, TT.keycap(k.c === ' ' ? 'Space' : k.c)), h('td', null, Math.round(k.acc * 100) + '%'), h('td', null, String(k.n)))))),
