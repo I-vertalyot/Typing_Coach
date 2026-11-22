@@ -661,3 +661,6 @@ h2, h3, .lr-title { font-weight: 800; }
 .lib-add { justify-self: start; }
 .lib-editor { margin-top: 18px; }
 .lib-editor h2 { margin: 0 0 4px; }
+#static-lessons { margin-top: 34px; scroll-margin-top: 80px; }
+.lib-lede { margin: -4px 0 6px; }
+.lib-group h3 { margin: 18px 0 8px; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }

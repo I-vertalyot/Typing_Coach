@@ -482,9 +482,12 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   console.log('\n13. Library (fixed lessons)');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
-    await page.click('.nav-link[data-nav="library"]'); await page.waitForSelector('.library');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.library');
     const n = await page.evaluate(() => TT.LIBRARY.length);
     ok(await page.$$eval('.library .text-row', e => e.length) === n, 'Library lists all ' + n + ' fixed lessons');
+    ok(!(await page.$('.nav-link[data-nav="library"]')), 'there is no Library tab');
+    ok((await page.textContent('#static-lessons h2')) === 'Static lessons', 'Practice has a Static lessons block');
+    ok(await page.$('.drills ~ #static-lessons'), 'the block comes after Quick drills');
     const startRow = '.library .text-row:has-text("Pangrams")';
     await page.click(startRow + ' .btn.primary'); await page.waitForSelector('.tt-inner');
     const t1 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
@@ -496,6 +499,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     ok(t1 === t2, 'the text is the same the next time, also after mistakes');
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.library');
+    ok(await page.isVisible('.drills'), 'back goes to the Practice page');
     ok(await page.isVisible(startRow + ' .stars'), 'best stars are shown');
     ok((await page.textContent(startRow)).includes('Finished 2 times'), 'the lesson shows it was finished 2 times');
     ok((await page.textContent('.library .text-row:has-text("Alphabet")')).includes('Not finished yet'), 'other lessons show not finished yet');
@@ -533,7 +537,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   console.log('\n15. Library: my own lessons');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
-    await page.goto(FILE + '#library'); await page.waitForSelector('.library');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.library');
     await page.click('.lib-add');
     await page.fill('#le-title', 'Studio notes');
     await page.fill('#le-body', 'Set the gain first, then check the levels. Keep the mix clean and simple.');
@@ -557,7 +561,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     ok((await page.textContent('.library .text-row:has-text("Studio notes")')).includes('Finished 1 time'), 'results stay after editing');
     await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
     ok(!(await page.textContent('.my-texts')).includes('Studio notes'), 'Library lessons are not listed in My texts');
-    await page.goto(FILE + '#library'); await page.waitForSelector('.library');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.library');
     await page.click('.library .text-row:has-text("Studio notes") [aria-label^="Delete"]');
     await page.click('.dialog .btn.danger');
     await page.waitForTimeout(100);

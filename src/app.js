@@ -406,7 +406,7 @@
   }
 
   // ───────────────────────── Shell ─────────────────────────
-  const NAV = [['learn', 'Learn'], ['library', 'Library'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
+  const NAV = [['learn', 'Learn'], ['practice', 'Practice'], ['progress', 'Progress'], ['options', 'Options']];
   function renderShell() {
     const app = document.getElementById('app');
     app.textContent = '';
@@ -484,7 +484,8 @@
     const hash = (location.hash || '').replace('#', '');
     const m = hash.match(/^lesson-(\d+)$/);
     if (m) return { view: 'lesson', idx: Math.min(COURSE.length, Math.max(1, +m[1])) - 1 };
-    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys', 'library'].includes(hash)) return { view: hash };
+    if (['practice', 'coach', 'progress', 'options', 'steno', 'keys'].includes(hash)) return { view: hash };
+    if (hash === 'library') return { view: 'practice', scrollTo: 'static-lessons' };
     return { view: 'learn' };
   }
   function render() {
@@ -500,13 +501,12 @@
     view.className = 'view view-' + r.view;
     if (r.view === 'learn') renderLearn(view);
     else if (r.view === 'lesson') renderLesson(view, r.idx);
-    else if (r.view === 'practice') renderPractice(view);
+    else if (r.view === 'practice') { renderPractice(view); if (r.scrollTo) setTimeout(() => { const el = document.getElementById(r.scrollTo); if (el) el.scrollIntoView(); }, 0); }
     else if (r.view === 'coach') renderCoach(view);
     else if (r.view === 'progress') renderProgress(view);
     else if (r.view === 'options') renderOptions(view);
     else if (r.view === 'steno') renderSteno(view);
     else if (r.view === 'keys') renderPickKeys(view);
-    else if (r.view === 'library') renderLibrary(view);
   }
   window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
   // A link to the page we are already on (for example from the typing screen) still re-renders it.
@@ -1375,7 +1375,7 @@
       if (Sync.channels.texts) Sync.channels.texts.put(t);
       const isNew = !E.id;
       libEditing = null;
-      TT.toast(isNew ? 'Lesson added to the Library.' : 'Lesson saved.');
+      TT.toast(isNew ? 'Lesson added to Static lessons.' : 'Lesson saved.');
       render();
     };
     setTimeout(upd, 0);
@@ -1388,7 +1388,7 @@
       h('div', { class: 'editor-foot' }, count),
       warn,
       h('div', { class: 'cta-row' },
-        h('button', { class: 'btn primary', type: 'button', onclick: save }, E.id ? 'Save changes' : 'Add to Library'),
+        h('button', { class: 'btn primary', type: 'button', onclick: save }, E.id ? 'Save changes' : 'Add lesson'),
         h('button', { class: 'btn ghost', type: 'button', onclick: () => { libEditing = null; render(); } }, 'Cancel')));
   }
   async function deleteLesson(l) {
@@ -1401,18 +1401,18 @@
     TT.toast('Lesson deleted.');
     render();
   }
-  function renderLibrary(view) {
-    const wrap = h('div', { class: 'wrap library' });
-    const openEditor = () => { libEditing = { title: '', group: '', note: '', body: '' }; render(); setTimeout(() => { const t = document.getElementById('le-title'); if (t) t.focus(); }, 0); };
-    wrap.append(h('header', { class: 'page-head' },
-      h('h1', { class: 'display' }, 'Library'),
-      h('p', { class: 'lede' }, 'Fixed lessons. The text is always the same, so you can repeat a lesson and compare your results.'),
+  // The "Static lessons" block on the Practice page.
+  function staticLessonsBlock() {
+    const sec = h('section', { class: 'library', id: 'static-lessons' });
+    const openEditor = () => { libEditing = { title: '', group: '', note: '', body: '' }; render(); setTimeout(() => { const t = document.getElementById('le-title'); if (t) { t.focus(); t.scrollIntoView({ block: 'center' }); } }, 0); };
+    sec.append(h('div', { class: 'sec-head row' }, h('h2', null, 'Static lessons'),
       libEditing ? null : h('button', { class: 'btn primary lib-add', type: 'button', onclick: openEditor }, icon('plus'), 'Add a lesson')));
-    if (libEditing) wrap.append(libEditor());
+    sec.append(h('p', { class: 'muted lib-lede' }, 'The text is always the same, so you can repeat a lesson and compare your results.'));
+    if (libEditing) sec.append(libEditor());
     const groups = [];
     allLessons().forEach(l => { let g = groups.find(x => x.name === l.group); if (!g) groups.push(g = { name: l.group || 'Lessons', items: [] }); g.items.push(l); });
     groups.forEach(g => {
-      wrap.append(h('section', null, sectionHead(g.name),
+      sec.append(h('div', { class: 'lib-group' }, h('h3', null, g.name),
         h('ul', { class: 'text-list' }, g.items.map(l => {
           const info = libInfo(l);
           const words = (l.text.match(/\S+/g) || []).length;
@@ -1424,11 +1424,11 @@
             h('div', { class: 'tr-actions' },
               info.stars ? TT.starRow(info.stars, 3) : null,
               h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start'),
-              l.own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Edit ' + l.title, onclick: () => { libEditing = { id: l.id, title: l.title, group: l.group, note: l.note, body: l.text }; render(); window.scrollTo(0, 0); } }, icon('edit')) : null,
+              l.own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Edit ' + l.title, onclick: () => { libEditing = { id: l.id, title: l.title, group: l.group, note: l.note, body: l.text }; render(); setTimeout(() => { const e = document.getElementById('le-title'); if (e) e.scrollIntoView({ block: 'center' }); }, 0); } }, icon('edit')) : null,
               l.own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Delete ' + l.title, onclick: () => deleteLesson(l) }, icon('trash')) : null));
         }))));
     });
-    view.append(wrap);
+    return sec;
   }
   function startLibrary(l, pi) {
     const parts = libParts(l);
@@ -1436,10 +1436,10 @@
     pi = Math.min(pi || 0, parts.length - 1);
     const rec = libRec(l);
     Typing.start({
-      kind: 'library', title: l.title, sub: parts.length > 1 ? 'Part ' + (pi + 1) + ' of ' + parts.length : 'Library',
+      kind: 'library', title: l.title, sub: parts.length > 1 ? 'Part ' + (pi + 1) + ' of ' + parts.length : 'Static lesson',
       dots: parts.length > 1 && parts.length <= 12 ? parts.map((_, i) => rec[i] ? rec[i].s : -1) : null, dot: pi,
       text: parts[pi], note: l.note, lang: 'en', target: targetFor(20),
-      back: { label: 'Library', href: '#library' },
+      back: { label: 'Practice', href: '#library' },
       complete(st, stars) {
         const L = App.state.lessons['lib-' + l.id] = App.state.lessons['lib-' + l.id] || { ex: {} };
         const prev = L.ex[pi] || { s: 0, w: 0, a: 0 };
@@ -1449,8 +1449,8 @@
           const D = App.state.libDoneByDev[App.dev] = App.state.libDoneByDev[App.dev] || {};
           D['l_' + l.id] = Math.max(D['l_' + l.id] || 0, libInfo(l).times) + 1;
         }
-        recordSession('library', l.id + ':' + pi, 'Library: ' + l.title, st);
-        const back = { label: 'Back to Library', act: () => { location.hash = '#library'; render(); } };
+        recordSession('library', l.id + ':' + pi, 'Static lesson: ' + l.title, st);
+        const back = { label: 'Back to Practice', act: () => { if (location.hash === '#library') render(); else location.hash = '#library'; } };
         return {
           primary: stars === 0 ? { label: 'Try again', act: () => startLibrary(l, pi) } : !last ? { label: 'Next part', act: () => startLibrary(l, pi + 1) } : back,
           secondary: stars === 0 ? back : { label: 'Try again', act: () => startLibrary(l, pi) }
@@ -1551,7 +1551,7 @@
     const wrap = h('div', { class: 'wrap practice' });
     wrap.append(h('header', { class: 'page-head' },
       h('h1', { class: 'display' }, 'Practice'),
-      h('p', { class: 'lede' }, 'Train your weak keys and words, or type your own texts.')));
+      h('p', { class: 'lede' }, 'Train your weak keys and words, type static lessons, or type your own texts.')));
 
     // drills
     const weak = weakKeys(5);
@@ -1574,6 +1574,7 @@
       drillCard('Choose keys', h('span', { class: 'muted small' }, App.state.settings.pickKeys ? h('span', { class: 'kcs' }, Array.from(App.state.settings.pickKeys).slice(0, 12).map(c => TT.keycap(c.toUpperCase()))) : 'Pick the keys you want to practice.'), () => { location.hash = '#keys'; }),
       drillCard('Steno basics', h('span', { class: 'muted small' }, 'The court reporters’ technique: press several keys at once to write a whole word.'), () => { location.hash = '#steno'; }));
     wrap.append(h('div', { class: 'sec-head row drills-head' }, h('h2', null, 'Quick drills'), lengthPicker()), drills);
+    wrap.append(staticLessonsBlock());
 
     // my texts
     const list = Object.values(App.texts).filter(t => !t.lib).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
