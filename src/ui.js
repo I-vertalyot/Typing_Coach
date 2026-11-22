@@ -226,14 +226,14 @@
     // right hand mirrored
     const mirror = { lp: 'rp', lr: 'rr', lm: 'rm', li: 'ri' };
     fingers.forEach(([id, x, y, w, hh]) => g.append(finger(mirror[id], 520 - x - w, y, w, hh)));
-    // thumbs
-    const tl = s('rect', { x: 188, y: 92, width: 24, height: 54, rx: 12, class: 'fing', 'data-zone': 'thumb', transform: 'rotate(-48 200 128)' });
-    const tr = s('rect', { x: 308, y: 92, width: 24, height: 54, rx: 12, class: 'fing', 'data-zone': 'thumb', transform: 'rotate(48 320 128)' });
+    // thumbs: they come out of the inner side of each palm and point up and inward; the palm covers their base
+    const tl = s('rect', { x: 168, y: 72, width: 26, height: 64, rx: 13, class: 'fing thumb', 'data-zone': 'thumb', transform: 'rotate(38 181 130)' });
+    const tr = s('rect', { x: 326, y: 72, width: 26, height: 64, rx: 13, class: 'fing thumb', 'data-zone': 'thumb', transform: 'rotate(-38 339 130)' });
     F.th = [tl, tr];
     g.append(tl, tr);
     // palms
-    g.append(s('rect', { x: 62, y: 84, width: 125, height: 66, rx: 26, class: 'palm' }));
-    g.append(s('rect', { x: 333, y: 84, width: 125, height: 66, rx: 26, class: 'palm' }));
+    g.append(s('rect', { x: 62, y: 84, width: 125, height: 62, rx: 28, class: 'palm' }));
+    g.append(s('rect', { x: 333, y: 84, width: 125, height: 62, rx: 28, class: 'palm' }));
     svg.append(g);
     let on = [];
     return {
