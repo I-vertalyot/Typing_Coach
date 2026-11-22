@@ -64,6 +64,7 @@ src/style.css           styles (light and dark theme)
 src/index.template.html page shell
 build.js                joins everything into dist/index.html
 dist/index.html         the built app
+icons/                  home screen icon (Keycap T): icon.svg and PNGs; dist/manifest.webmanifest uses them
 test/content.test.js    checks that drills use only learned keys, that every layout can type every lesson, and the merge logic
 test/e2e.js             headless Chrome: typing, layouts, two-device sync, coach, reset, dark mode, phone width, weak keys
 test/mock-claude.js     a fake Claude platform for the browser tests
