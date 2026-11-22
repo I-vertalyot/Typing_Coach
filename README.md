@@ -11,7 +11,7 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 - **Keyboard layouts.** English (US), English (UK), Czech (QWERTZ), Czech (QWERTY) and German (QWERTZ). If the selected layout doesn't match what your keyboard actually types, the app offers to switch.
 - **One moving line.** The text runs past a fixed cursor, like a ticker. You can switch to the whole text in a box in Options. The typing text is sans-serif for easy reading; monospace is an option.
 - **Two ways to handle mistakes.** "Stop until the right key", or "continue and fix with Backspace".
-- **Library.** Fixed lessons whose text never changes (warm-ups, every letter, numbers and symbols, everyday English). To add a lesson, add a block to `src/library.js` (the template is at the top of the file).
+- **Library.** Fixed lessons whose text never changes (warm-ups, every letter, numbers and symbols, everyday English). Each lesson is about 100 words, about 2 minutes, typed in one go. To add a lesson, add a block to `src/library.js` (the template is at the top of the file).
 - **Your own texts.** Paste a text or open a `.txt` file. Long texts are split into parts, and the app remembers where you stopped. Smart quotes and dashes become keyboard characters.
 - **Writing coach** (in lesson 26). Claude corrects your request (removals crossed out, additions in blue), explains each mistake, rates how clear the request is and suggests a better version. Then you type it.
 - **Common words.** Practice the 50, 100, 200, 500 or 1000 most common English words.

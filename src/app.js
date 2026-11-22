@@ -1324,7 +1324,7 @@
 
   // ───────────────────────── Library (fixed lessons) ─────────────────────────
   // Lessons from src/library.js. The text never changes; only your results are saved (best per part).
-  const libParts = (l) => TT.chunkText(TT.cleanText(l.text, App.layout), 260);
+  const libParts = (l) => TT.chunkText(TT.cleanText(l.text, App.layout), 700);
   const libRec = (l) => (App.state.lessons['lib-' + l.id] && App.state.lessons['lib-' + l.id].ex) || {};
   function libInfo(l) {
     const parts = libParts(l), rec = libRec(l);
