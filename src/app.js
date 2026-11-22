@@ -242,7 +242,7 @@
     const synced = new Set(LS.get(K.synced) || []);
     const tomb = new Set(LS.get(K.tomb) || []);
     const persist = () => { LS.set(K.synced, Array.from(synced)); LS.set(K.tomb, Array.from(tomb)); };
-    const bodyOf = (t) => ({ title: t.title || '', body: t.body || '', createdAt: t.createdAt || Date.now(), updatedAt: t.updatedAt || Date.now(), src: t.src || 'user' });
+    const bodyOf = (t) => ({ title: t.title || '', body: t.body || '', createdAt: t.createdAt || Date.now(), updatedAt: t.updatedAt || Date.now(), src: t.src || 'user', ...(t.lib ? { lib: true, group: t.group || '', note: t.note || '' } : {}) });
     let inflight = 0;
     const track = async (p) => {
       inflight++; ch.saving = true; Sync.recompute();
@@ -1336,13 +1336,81 @@
     const fromHistory = App.state.history.filter(x => x.k === 'library' && x.r === lastRef && (x.a || 0) >= 90).length;
     return { parts: parts.length, done, stars: done === parts.length ? minS : 0, bestW, next: parts.findIndex((_, i) => !(rec[i] && rec[i].s >= 1)), times: Math.max(counted, fromHistory) };
   }
+  // Your own Library lessons are saved with your texts (lib: true), so they sync between devices.
+  const MY_GROUP = 'My lessons';
+  const userLessons = () => Object.values(App.texts).filter(t => t.lib)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    .map(t => ({ id: t.id, group: t.group || MY_GROUP, title: t.title, note: t.note || '', text: t.body, own: true }));
+  const allLessons = () => TT.LIBRARY.concat(userLessons());
+  let libEditing = null; // { id?, title, group, note, body }
+  function libEditor() {
+    const E = libEditing;
+    const title = h('input', { id: 'le-title', class: 'input', maxlength: '80', placeholder: 'For example: Emails at work' });
+    const group = h('input', { id: 'le-group', class: 'input', maxlength: '40', list: 'le-groups', placeholder: MY_GROUP });
+    const groups = h('datalist', { id: 'le-groups' }, [...new Set(allLessons().map(l => l.group))].map(g => h('option', { value: g })));
+    const note = h('input', { id: 'le-note', class: 'input', maxlength: '160', placeholder: 'Optional: one short line shown above the text' });
+    const body = h('textarea', { id: 'le-body', class: 'input area', rows: '7', maxlength: '20000', placeholder: 'Paste or write the lesson text. About 100 words takes about 2 minutes.' });
+    title.value = E.title || ''; group.value = E.group || ''; note.value = E.note || ''; body.value = E.body || '';
+    const count = h('span', { class: 'small muted' });
+    const warn = h('p', { class: 'small warn', hidden: true });
+    const upd = () => {
+      const words = (body.value.match(/\S+/g) || []).length;
+      const parts = body.value.trim() ? libParts({ text: body.value }).length : 0;
+      count.textContent = words + ' words · about ' + Math.max(1, Math.round(words / 50)) + ' min' + (parts > 1 ? ' · ' + parts + ' parts' : '');
+      const lost = new Set();
+      for (const ch of body.value.replace(/\s+/g, ' ')) if (!App.layout.charToKey[ch] && !/[‘’“”–—…]/.test(ch)) lost.add(ch);
+      warn.hidden = !lost.size;
+      warn.textContent = lost.size ? 'Your ' + App.layout.name + ' keyboard has no key for: ' + Array.from(lost).slice(0, 12).join(' ') + '. These characters are changed or skipped when you type.' : '';
+      Object.assign(E, { title: title.value, group: group.value, note: note.value, body: body.value });
+    };
+    [title, group, note, body].forEach(x => x.addEventListener('input', upd));
+    const save = () => {
+      const b = body.value.trim();
+      if (!b) { TT.toast('Write or paste the lesson text first.'); body.focus(); return; }
+      const now = Date.now(), id = E.id || TT.uid('t');
+      const t = Object.assign({}, App.texts[id] || { createdAt: now, src: 'user' }, {
+        id, lib: true, title: title.value.trim() || b.split(/\s+/).slice(0, 5).join(' '),
+        group: group.value.trim() || MY_GROUP, note: note.value.trim(), body: b, updatedAt: now });
+      App.texts[id] = t; saveTextsLocal();
+      if (Sync.channels.texts) Sync.channels.texts.put(t);
+      const isNew = !E.id;
+      libEditing = null;
+      TT.toast(isNew ? 'Lesson added to the Library.' : 'Lesson saved.');
+      render();
+    };
+    setTimeout(upd, 0);
+    return h('div', { class: 'panel editor lib-editor' },
+      h('h2', null, E.id ? 'Edit lesson' : 'Add a lesson'),
+      h('label', { for: 'le-title' }, 'Title'), title,
+      h('label', { for: 'le-group' }, 'Group'), group, groups,
+      h('label', { for: 'le-note' }, 'Note'), note,
+      h('label', { for: 'le-body' }, 'Text'), body,
+      h('div', { class: 'editor-foot' }, count),
+      warn,
+      h('div', { class: 'cta-row' },
+        h('button', { class: 'btn primary', type: 'button', onclick: save }, E.id ? 'Save changes' : 'Add to Library'),
+        h('button', { class: 'btn ghost', type: 'button', onclick: () => { libEditing = null; render(); } }, 'Cancel')));
+  }
+  async function deleteLesson(l) {
+    const ok = await TT.dialog({ title: 'Delete “' + (l.title || 'this lesson') + '”?', body: 'This removes the lesson and its results from all your devices.', ok: 'Delete', danger: true });
+    if (!ok) return;
+    delete App.texts[l.id]; delete App.state.lessons['lib-' + l.id];
+    saveTextsLocal(); saveState();
+    if (Sync.channels.texts) Sync.channels.texts.remove(l.id);
+    else { const tomb = new Set(LS.get(K.tomb) || []); tomb.add(l.id); LS.set(K.tomb, Array.from(tomb)); }
+    TT.toast('Lesson deleted.');
+    render();
+  }
   function renderLibrary(view) {
     const wrap = h('div', { class: 'wrap library' });
+    const openEditor = () => { libEditing = { title: '', group: '', note: '', body: '' }; render(); setTimeout(() => { const t = document.getElementById('le-title'); if (t) t.focus(); }, 0); };
     wrap.append(h('header', { class: 'page-head' },
       h('h1', { class: 'display' }, 'Library'),
-      h('p', { class: 'lede' }, 'Fixed lessons. The text is always the same, so you can repeat a lesson and compare your results.')));
+      h('p', { class: 'lede' }, 'Fixed lessons. The text is always the same, so you can repeat a lesson and compare your results.'),
+      libEditing ? null : h('button', { class: 'btn primary lib-add', type: 'button', onclick: openEditor }, icon('plus'), 'Add a lesson')));
+    if (libEditing) wrap.append(libEditor());
     const groups = [];
-    TT.LIBRARY.forEach(l => { let g = groups.find(x => x.name === l.group); if (!g) groups.push(g = { name: l.group || 'Lessons', items: [] }); g.items.push(l); });
+    allLessons().forEach(l => { let g = groups.find(x => x.name === l.group); if (!g) groups.push(g = { name: l.group || 'Lessons', items: [] }); g.items.push(l); });
     groups.forEach(g => {
       wrap.append(h('section', null, sectionHead(g.name),
         h('ul', { class: 'text-list' }, g.items.map(l => {
@@ -1355,7 +1423,9 @@
             h('span', { class: 'lib-count' + (info.times ? '' : ' zero'), title: 'Times you finished this lesson' }, info.times ? 'Finished ' + info.times + (info.times === 1 ? ' time' : ' times') : 'Not finished yet'),
             h('div', { class: 'tr-actions' },
               info.stars ? TT.starRow(info.stars, 3) : null,
-              h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start')));
+              h('button', { class: 'btn primary small', type: 'button', onclick: () => startLibrary(l, info.next < 0 ? 0 : info.next) }, icon('play'), info.done && info.next > 0 ? 'Continue part ' + (info.next + 1) : info.stars ? 'Again' : 'Start'),
+              l.own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Edit ' + l.title, onclick: () => { libEditing = { id: l.id, title: l.title, group: l.group, note: l.note, body: l.text }; render(); window.scrollTo(0, 0); } }, icon('edit')) : null,
+              l.own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Delete ' + l.title, onclick: () => deleteLesson(l) }, icon('trash')) : null));
         }))));
     });
     view.append(wrap);
@@ -1506,7 +1576,7 @@
     wrap.append(h('div', { class: 'sec-head row drills-head' }, h('h2', null, 'Quick drills'), lengthPicker()), drills);
 
     // my texts
-    const list = Object.values(App.texts).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const list = Object.values(App.texts).filter(t => !t.lib).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
     const mine = h('section', { class: 'my-texts' });
     mine.append(h('div', { class: 'sec-head row' }, h('h2', null, 'My texts'),
       editing ? null : h('button', { class: 'btn primary', type: 'button', onclick: () => { editing = { title: '', body: '' }; render(); } }, icon('plus'), 'Add a text')));

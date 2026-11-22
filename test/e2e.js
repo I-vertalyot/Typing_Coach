@@ -530,6 +530,42 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n15. Library: my own lessons');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#library'); await page.waitForSelector('.library');
+    await page.click('.lib-add');
+    await page.fill('#le-title', 'Studio notes');
+    await page.fill('#le-body', 'Set the gain first, then check the levels. Keep the mix clean and simple.');
+    ok((await page.textContent('.lib-editor .editor-foot')).includes('14 words'), 'editor counts the words');
+    await page.click('.lib-editor .btn.primary');
+    const row = '.library .text-row:has-text("Studio notes")';
+    ok(await page.isVisible(row), 'the new lesson is in the Library');
+    ok((await page.textContent('.library')).includes('My lessons'), 'it is in the group My lessons');
+    const n = await page.evaluate(() => TT.LIBRARY.length);
+    ok(await page.$$eval('.library .text-row', e => e.length) === n + 1, 'built-in lessons stay');
+    await page.click(row + ' .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(t.startsWith('Set the gain first'), 'the lesson shows its text');
+    await typeExercise(page);
+    await page.click('.ty-head .back'); await page.waitForSelector('.library');
+    ok((await page.textContent(row)).includes('Finished 1 time'), 'finished count works for my lessons');
+    await page.click(row + ' [aria-label^="Edit"]');
+    await page.fill('#le-group', 'Sound');
+    await page.click('.lib-editor .btn.primary');
+    ok((await page.textContent('.library')).includes('Sound'), 'lesson moved to its new group');
+    ok((await page.textContent('.library .text-row:has-text("Studio notes")')).includes('Finished 1 time'), 'results stay after editing');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    ok(!(await page.textContent('.my-texts')).includes('Studio notes'), 'Library lessons are not listed in My texts');
+    await page.goto(FILE + '#library'); await page.waitForSelector('.library');
+    await page.click('.library .text-row:has-text("Studio notes") [aria-label^="Delete"]');
+    await page.click('.dialog .btn.danger');
+    await page.waitForTimeout(100);
+    ok(!(await page.textContent('.library')).includes('Studio notes'), 'lesson deleted');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

@@ -658,3 +658,6 @@ h2, h3, .lr-title { font-weight: 800; }
 }
 :root.force-dark .riso-letter { mix-blend-mode: screen; }
 :root.force-light .riso-letter { mix-blend-mode: multiply; }
+.lib-add { justify-self: start; }
+.lib-editor { margin-top: 18px; }
+.lib-editor h2 { margin: 0 0 4px; }
