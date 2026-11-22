@@ -124,6 +124,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     // capital letters show a Shift hint on the other hand
     await page.goto(FILE + '#lesson-11'); await page.waitForSelector('.lesson-grid');
     await page.click('.ex-btn >> nth=1'); await page.waitForSelector('.tt-inner');
+    await page.waitForFunction(() => (document.querySelector('.ty-hint') || {}).textContent, null, { timeout: 3000 }).catch(() => {});
     const hint = await page.textContent('.ty-hint');
     ok(/right index finger.*left Shift/.test(hint) || /I.*right middle finger.*left Shift/.test(hint), 'capital I uses left Shift: ' + hint);
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
@@ -566,6 +567,31 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.click('.dialog .btn.danger');
     await page.waitForTimeout(100);
     ok(!(await page.textContent('.library')).includes('Studio notes'), 'lesson deleted');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('\n16. My texts: one lesson with a counter');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await page.click('text=Add a text');
+    const long = Array.from({ length: 12 }, (_, i) => 'This is sentence number ' + (i + 1) + ' of my long practice text.').join(' ');
+    await page.fill('#te-title', 'Long text'); await page.fill('#te-body', long);
+    await page.click('.editor .btn.primary');
+    const row = '.my-texts .text-row:has-text("Long text")';
+    ok(!(await page.textContent(row)).includes('part'), 'no parts are shown');
+    ok((await page.textContent(row)).includes('Not finished yet'), 'counter starts at not finished');
+    await page.click(row + ' .btn.primary'); await page.waitForSelector('.tt-inner');
+    const t = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(t === long, 'the whole text is one lesson (' + t.length + ' characters)');
+    await typeExercise(page);
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    ok((await page.textContent(row)).includes('Finished 1 time'), 'counter shows 1 time');
+    await page.click(row + ' .btn.primary'); await page.waitForSelector('.tt-inner');
+    await typeExercise(page);
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    ok((await page.textContent(row)).includes('Finished 2 times'), 'counter shows 2 times');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }

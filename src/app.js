@@ -1710,21 +1710,26 @@
     render();
   }
 
+  // How many times a text was typed to the end (with at least 1 star), summed over your devices.
+  function textTimes(t) {
+    const counted = (TT.sumByDevice(App.state.libDoneByDev || {})['t_' + t.id]) || 0;
+    return Math.max(counted, (App.state.textProg[t.id] || {}).laps || 0);
+  }
   function textRow(t, own) {
-    const chunks = TT.chunkText(TT.cleanText(t.body, App.layout), 260);
-    const prog = App.state.textProg[t.id] || { next: 0, best: 0, laps: 0 };
-    const next = Math.min(prog.next || 0, Math.max(0, chunks.length - 1));
+    const prog = App.state.textProg[t.id] || { best: 0 };
     const words = (t.body.match(/\S+/g) || []).length;
+    const times = textTimes(t);
     return h('li', { class: 'text-row' },
       h('div', { class: 'tr-main' },
         h('strong', null, t.title || 'Untitled text'),
-        h('span', { class: 'muted small' }, words + ' words · ' + (chunks.length === 1 ? '1 part' : chunks.length + ' parts') +
-          (prog.best ? ' · best ' + fmtWpm(prog.best) + ' WPM' : '') + (prog.laps ? ' · finished ' + prog.laps + '×' : ''))),
+        h('span', { class: 'muted small' }, words + ' words · about ' + Math.max(1, Math.round(words / 50)) + ' min' + (prog.best ? ' · best ' + fmtWpm(prog.best) + ' WPM' : ''))),
+      h('span', { class: 'lib-count' + (times ? '' : ' zero'), title: 'Times you typed this text to the end' }, times ? 'Finished ' + times + (times === 1 ? ' time' : ' times') : 'Not finished yet'),
       h('div', { class: 'tr-actions' },
-        h('button', { class: 'btn primary small', type: 'button', onclick: () => startText(t, next) }, icon('play'), chunks.length > 1 && next > 0 ? 'Continue part ' + (next + 1) : 'Practice'),
+        h('button', { class: 'btn primary small', type: 'button', onclick: () => startText(t) }, icon('play'), times ? 'Again' : 'Practice'),
         own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Edit ' + (t.title || 'text'), onclick: () => { editing = { id: t.id, title: t.title, body: t.body }; render(); } }, icon('edit')) : null,
         own ? h('button', { class: 'btn ghost small icon-only', type: 'button', 'aria-label': 'Delete ' + (t.title || 'text'), onclick: () => deleteText(t) }, icon('trash')) : null));
   }
+
 
   function textEditor() {
     const title = h('input', { id: 'te-title', class: 'input', type: 'text', maxlength: '80', value: editing.title || '', placeholder: 'For example: Email to my landlord' });
@@ -1789,34 +1794,33 @@
     render();
   }
 
-  function startText(t, chunkIdx) {
-    const chunks = TT.chunkText(TT.cleanText(t.body, App.layout), 260);
-    if (!chunks.length) { TT.toast('This text has no characters your keyboard can type.'); return; }
-    const ci = Math.min(chunkIdx || 0, chunks.length - 1);
+  function startText(t) {
+    const text = TT.cleanText(t.body, App.layout).trim();
+    if (!text) { TT.toast('This text has no characters your keyboard can type.'); return; }
     const builtIn = !App.texts[t.id];
     Typing.start({
-      kind: 'text', title: t.title || 'My text', sub: chunks.length > 1 ? 'Part ' + (ci + 1) + ' of ' + chunks.length : '',
-      dots: chunks.length > 1 && chunks.length <= 12 ? chunks.map((_, i) => i < ci ? 1 : -1) : null, dot: ci,
-      text: chunks[ci], lang: builtIn ? 'en' : null, target: targetFor(25),
+      kind: 'text', title: t.title || 'My text', sub: 'My text',
+      text, lang: builtIn ? 'en' : null, target: targetFor(25),
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         const prog = App.state.textProg[t.id] = App.state.textProg[t.id] || { next: 0, best: 0, laps: 0 };
         prog.best = Math.max(prog.best || 0, round1(st.wpm));
-        const last = ci === chunks.length - 1;
         if (stars >= 1) {
-          if (last) { prog.next = 0; prog.laps = (prog.laps || 0) + 1; } else prog.next = Math.max(prog.next || 0, ci + 1);
+          const times = textTimes(t) + 1;
+          const D = App.state.libDoneByDev[App.dev] = App.state.libDoneByDev[App.dev] || {};
+          D['t_' + t.id] = (D['t_' + t.id] || 0) + (times - textTimes(t));
+          prog.laps = Math.max(prog.laps || 0, times); prog.next = 0;
         }
         recordSession('text', t.id, t.title || 'My text', st);
-        const res = {};
-        if (stars >= 1 && !last) res.primary = { label: 'Next part', act: () => startText(t, ci + 1) };
-        else if (stars >= 1) res.primary = { label: 'Back to Practice', act: () => { location.hash = '#practice'; render(); } };
-        else res.primary = { label: 'Try again', act: () => startText(t, ci) };
-        res.secondary = stars >= 1 ? { label: 'Try again', act: () => startText(t, ci) } : { label: 'Back to Practice', act: () => { location.hash = '#practice'; render(); } };
-        if (last && stars >= 1) res.message = 'You finished the whole text.';
+        const back = { label: 'Back to Practice', act: () => { location.hash = '#practice'; render(); } };
+        const res = stars >= 1 ? { primary: back, secondary: { label: 'Try again', act: () => startText(t) } }
+          : { primary: { label: 'Try again', act: () => startText(t) }, secondary: back };
+        if (stars >= 1) res.message = 'You finished the whole text. Finished ' + textTimes(t) + (textTimes(t) === 1 ? ' time.' : ' times.');
         return res;
       }
     });
   }
+
 
   // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
   const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
