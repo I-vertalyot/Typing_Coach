@@ -461,6 +461,17 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await toPractice();
     ok(!(await page.textContent('.drill:has-text("Your weak words")')).includes('teacher'), 'the word left the weak words');
     ok((await page.textContent('.drill:has-text("Strong learned words")')).includes('teacher'), 'the word is in Strong learned words');
+    // add words by hand; a strong word added again becomes weak again
+    await page.click('.drill:has-text("Your weak words") .ww-add');
+    await page.fill('#ww-input', 'Because, through  teacher 123');
+    await page.click('.dialog .btn.primary');
+    const c2 = await page.textContent('.drill:has-text("Your weak words")');
+    ok(c2.includes('because') && c2.includes('through') && c2.includes('teacher'), 'added words are in Your weak words: ' + c2);
+    ok(!(await page.$('.drill:has-text("Strong learned words")')) || !(await page.textContent('.drill:has-text("Strong learned words")')).includes('teacher'), 'teacher left Strong learned words');
+    ok((await page.textContent('#toast')).includes('Skipped: 123'), 'a word without letters is skipped');
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    const d2 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(d2.split(' ').filter(w => w === 'because').length === 7, 'the drill uses added words: ' + d2);
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }

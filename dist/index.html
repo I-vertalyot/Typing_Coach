@@ -3766,9 +3766,11 @@ h2, h3, .lr-title { font-weight: 800; }
       (() => { const ww = weakWords(8); return drillCard('Your weak words',
         ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww', title: x.streak + ' of ' + LEARN_DAYS + ' days' }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null))),
           h('span', { class: 'small muted' }, 'Type a word right ' + LEARN_RUN + ' times in a row, on ' + LEARN_DAYS + ' days in a row, and it moves to your strong words.'))
-          : h('span', { class: 'muted small' }, 'A word becomes weak when you typed it at least 5 times, 2 or more times with a mistake, and 90% or less right.'),
+          : h('span', { class: 'muted small' }, 'A word becomes weak when you typed it at least 5 times, 2 or more times with a mistake, and 90% or less right. You can also add words yourself.'),
         ww.length ? () => startDrill('weakwords') : null,
-        hasWordStats() ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null); })(),
+        h('span', { class: 'cta-row' },
+          h('button', { class: 'btn ghost small ww-add', type: 'button', onclick: addWeakWords }, icon('plus'), 'Add words'),
+          hasWordStats() || ww.length ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: resetWordStats }, icon('retry'), 'Reset') : null)); })(),
       (() => { const lw = learnedList(); return lw.length ? drillCard('Strong learned words',
         h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, lw.slice(0, 20).map(w => h('span', { class: 'ww good' }, w))), lw.length > 20 ? h('span', { class: 'small muted' }, '+ ' + (lw.length - 20) + ' more') : null),
         () => startDrill('learned')) : null; })(),
@@ -3833,15 +3835,46 @@ h2, h3, .lr-title { font-weight: 800; }
   // correctly 7 times in a row in one exercise.
   const LEARN_DAYS = 5, LEARN_RUN = 7;
   function wordStreak(f, now) {
-    const days = new Set((App.state.wordDays || {})[f] || []);
+    // only days since the word was (last) marked weak count
+    const since = TT.dayKey((App.state.weakMarked || {})[f] || 0);
+    const days = new Set(((App.state.wordDays || {})[f] || []).filter(d => d >= since));
     let n = 0, t = now || Date.now();
     if (!days.has(TT.dayKey(t))) t -= 86400000; // today not done yet: the streak can still continue
     while (days.has(TT.dayKey(t)) && n < 30) { n++; t -= 86400000; }
     return n;
   }
+  // A word is learned when it was learned after it was (last) marked weak. Adding a learned word again makes it weak again.
+  function isLearned(f) {
+    const S = App.state, L = (S.learnedWords || {})[f];
+    return !!L && L >= ((S.weakMarked || {})[f] || 0);
+  }
+  async function addWeakWords() {
+    const input = h('textarea', { id: 'ww-input', class: 'input area', rows: '3', placeholder: 'For example: because, through, which' });
+    const body = h('div', null,
+      h('p', { class: 'muted' }, 'Write the words you want to practice, separated by spaces or commas. They stay in Your weak words until you learn them.'),
+      h('label', { for: 'ww-input', class: 'visually-hidden' }, 'Words'), input);
+    const val = await TT.dialog({ title: 'Add weak words', body, ok: 'Add words', getValue: () => input.value });
+    if (!val) return;
+    const S = App.state, added = [], skipped = [];
+    const seen = new Set();
+    val.toLowerCase().split(/[\s,;]+/).forEach(raw => {
+      const w = raw.replace(/['’]/g, '').replace(/^[^a-z]+|[^a-z]+$/g, '');
+      if (!raw || seen.has(w)) return;
+      if (!/^[a-z]+$/.test(w)) { skipped.push(raw); return; }
+      seen.add(w);
+      const f = 'w_' + w;
+      if ((S.weakMarked || {})[f] && !isLearned(f)) return; // already weak
+      S.weakMarked[f] = Date.now();
+      added.push(w);
+    });
+    saveState();
+    TT.toast((added.length ? 'Added ' + added.length + (added.length === 1 ? ' word' : ' words') + ' to Your weak words.' : 'These words are already in Your weak words.') +
+      (skipped.length ? ' Skipped: ' + skipped.slice(0, 5).join(', ') + ' (use only the letters a to z).' : ''));
+    render();
+  }
   function markWordDay(f) {
     const S = App.state;
-    if (S.learnedWords[f]) return;
+    if (isLearned(f)) return;
     const tot = TT.sumByDevice(S.wordsByDev)[f];
     if (!S.weakMarked[f]) return; // only weak words
     void tot;
@@ -3865,12 +3898,12 @@ h2, h3, .lr-title { font-weight: 800; }
   function weakWords(n) {
     const S = App.state;
     const tot = TT.sumByDevice(S.wordsByDev);
-    return Object.keys(S.weakMarked || {}).filter(k => !(S.learnedWords || {})[k]).map(k => {
+    return Object.keys(S.weakMarked || {}).filter(k => !isLearned(k)).map(k => {
       const [ok, bad] = tot[k] || [0, 0];
       return { w: k.slice(2), ok, bad, score: (bad + 0.5) / (ok + bad + 2), streak: wordStreak(k) };
     }).sort((a, b) => b.score - a.score || b.bad - a.bad).slice(0, n || 12);
   }
-  const learnedList = () => Object.keys(App.state.learnedWords || {}).sort((a, b) => App.state.learnedWords[b] - App.state.learnedWords[a]).map(k => k.slice(2));
+  const learnedList = () => Object.keys(App.state.learnedWords || {}).filter(isLearned).sort((a, b) => App.state.learnedWords[b] - App.state.learnedWords[a]).map(k => k.slice(2));
   // Untimed: the 6 weakest words, 7 times each, so one drill can count as a good day.
   // Timed: the same words, mixed, as long as the time lasts.
   function weakWordsDrill(count, timed) {
