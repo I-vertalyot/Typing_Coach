@@ -1,4 +1,4 @@
-/* Course content: every lesson teaches keys + one English point + one tip for writing to Claude. */
+/* Course content: every lesson teaches keys + one English point + one tip for writing clear requests. */
 (function (TT) {
   'use strict';
 
@@ -10,8 +10,8 @@
       intro: 'Put your left fingers on A S D F and your right fingers on J K L and the key after L. Feel the small bumps on F and J: your index fingers always come back there. Press the space bar with your thumb. Try not to look at your hands. Look at the screen.',
       en: {
         h: 'The verb “ask”',
-        p: '“Ask” is the most useful verb when you talk to Claude.',
-        list: ['ask a question', 'ask for help (not “ask help”)', 'ask someone to do something: I asked Claude to check my email.']
+        p: '“Ask” is one of the most useful verbs in English.',
+        list: ['ask a question', 'ask for help (not “ask help”)', 'ask someone to do something: I asked my friend to check my email.']
       },
       ai: { h: 'Just ask', p: 'You don’t need perfect English to use Claude. It understands mistakes. But a clear request gets a better answer. In this course you learn to write clear requests, one small step at a time.' },
       ex: [
@@ -28,7 +28,7 @@
       en: {
         h: 'Past tense with -ed',
         p: 'Many verbs make the past tense with -ed:',
-        list: ['ask → asked', 'add → added', 'fail → failed', 'like → liked', 'Yesterday I asked Claude a question.']
+        list: ['ask → asked', 'add → added', 'fail → failed', 'like → liked', 'Yesterday I asked a question.']
       },
       ai: { h: 'Share your idea first', p: 'Start with your idea: “I have an idea for a small website.” When Claude knows the idea, it can help you plan the next steps.' },
       ex: [
@@ -99,7 +99,7 @@
         { t: 'nnn mmm jnj jmj an in on am me no' },
         { t: 'and not need make more name mean time tone format' },
         { t: 'learn english mention moment meaning mistake information' },
-        { t: 'i am learning english make it short the tone is formal and not too long i need more time', n: 'Tell Claude the tone you want: formal or friendly.' }
+        { t: 'i am learning english make it short the tone is formal and not too long i need more time', n: 'Say which tone you want: formal or friendly.' }
       ]
     },
     {
@@ -145,7 +145,7 @@
       ai: { h: 'Step by step', p: 'Break a big task into small steps: “First... then... finally...” Or simply ask: “Explain it step by step.”' },
       ex: [
         { t: 'ppp bbb lpl fbf up be pub bit top' },
-        { t: 'please prompt help problem about but better step point brief', n: 'A “prompt” is the message you write to Claude.' },
+        { t: 'please prompt help problem about but better step point brief', n: 'A “prompt” is a short request or question.' },
         { t: 'simple paragraph bullet number subject possible improve public' },
         { t: 'please help me plan my week write a brief summary in bullet points break the problem into small steps' }
       ]
@@ -172,13 +172,13 @@
       en: {
         h: 'Capital letters',
         p: 'Use a capital letter for:',
-        list: ['the start of a sentence', 'the word “I”', 'names and places: Claude, Anna, London', 'languages and nationalities: English, Czech', 'days and months: Monday, May']
+        list: ['the start of a sentence', 'the word “I”', 'names and places: Anna, Prague, London', 'languages and nationalities: English, Czech', 'days and months: Monday, May']
       },
       ai: { h: 'Punctuation helps', p: 'Claude understands text without capitals. But good punctuation makes long requests clear, for Claude and for people. It is also good practice for your English.' },
       ex: [
         { t: 'Aa Ss Dd Ff Jj Kk Ll Ee Ii Oo Tt Rr', n: 'Shift with the little finger of the other hand.' },
-        { t: 'I am learning English. I write to Claude every day.', n: '“I” and “English” always start with a capital letter.' },
-        { t: 'Hello, Claude. My name is Anna, and I live in London.' },
+        { t: 'I am learning English. I write in English every day.', n: '“I” and “English” always start with a capital letter.' },
+        { t: 'Hello, Tom. My name is Anna, and I live in London.' },
         { t: 'Please check my text, explain the mistakes, and write a better version.', n: 'Commas separate items in a list.' }
       ]
     },
@@ -214,217 +214,6 @@
         { t: 'The meeting is at 9:30 on May 12. Write a reminder for 15 people.' }
       ]
     },
-
-    // ───────────── Part 2 · Writing with Claude ─────────────
-    {
-      id: 'clear-verb', part: 2, title: 'Start with a clear verb', wpm: 22,
-      en: {
-        h: 'Instructions',
-        p: 'An instruction starts with the base form of a verb: Write, Explain, Summarize, Translate, Compare, Check, List. There is no subject and no “to”.',
-        list: ['Write an email to my teacher. (not “To write an email”)']
-      },
-      ai: { h: 'Put the action first', p: 'When the first word is the action, Claude knows the job at once. Then add the details.' },
-      ba: [{ b: 'email for teacher i was not in class', a: 'Write a short email to my teacher. Explain that I missed the class because I was sick.' }],
-      ex: [
-        { t: 'Write a short email to my teacher. Explain why I missed the class.', n: 'Verb + what + who it is for.' },
-        { t: 'Summarize this article in three sentences.' },
-        { t: 'Compare these two phones and tell me which one is better for photos.' },
-        { t: 'Suggest five names for my small coffee shop.' }
-      ]
-    },
-    {
-      id: 'polite', part: 2, title: 'Polite and clear', wpm: 22,
-      en: {
-        h: 'Polite requests',
-        p: 'Could you...? Can you...? Would you...? I’d like... After could, can and would, use the base verb.',
-        list: ['Could you help me? (not “Could you to help me” or “Could you helping me”)', 'I’d like = I would like']
-      },
-      ai: { h: 'Clear is better than long', p: 'Being polite is nice, but being clear matters most. One clear sentence is better than three polite, unclear ones.' },
-      ba: [{ b: 'Hello, maybe if you have time you could look at something, it is about my letter maybe', a: 'Could you check my cover letter and suggest three improvements?' }],
-      ex: [
-        { t: 'Could you help me write a cover letter for a job in marketing?' },
-        { t: 'I\'d like to improve this paragraph. Can you make it sound more natural?' },
-        { t: 'Would you explain the difference between "make" and "do", please?' },
-        { t: 'Thank you! That\'s very helpful. Could you give me two more examples?' }
-      ]
-    },
-    {
-      id: 'context', part: 2, title: 'Give context', wpm: 22,
-      en: {
-        h: 'because, so, who',
-        p: 'Give a reason with “because”. Give a result or purpose with “so”. Describe a person with “who”.',
-        list: ['I need it today because I have an exam tomorrow.', 'I’m a beginner, so please use simple words.', 'This email is for my boss, who likes short messages.']
-      },
-      ai: { h: 'Claude only knows what you tell it', p: 'Say who it is for, why you need it, and what you already know. Context changes the answer a lot.' },
-      ba: [{ b: 'explain pivot tables', a: 'I already know the basics of Excel. Explain pivot tables with one simple example, because I need them at work tomorrow.' }],
-      ex: [
-        { t: 'I\'m a beginner, so please explain it in simple words.' },
-        { t: 'This email is for my boss, who prefers short messages.' },
-        { t: 'I need it for a job interview tomorrow, so I want to sound confident.' },
-        { t: 'I already know the basics of Excel. I want to learn pivot tables.' }
-      ]
-    },
-    {
-      id: 'format', part: 2, title: 'Choose the format', wpm: 23,
-      en: {
-        h: 'Plurals after numbers',
-        p: 'After a number bigger than one, the noun is plural.',
-        list: ['three bullet points, two paragraphs, five examples', 'Useful phrases: in a table, no more than 100 words, at the end']
-      },
-      ai: { h: 'Describe the shape of the answer', p: 'Say the length, the format (a list, a table, an email) and the tone (formal or friendly).' },
-      ba: [{ b: 'tell me about healthy breakfasts', a: 'List 5 healthy breakfast ideas in a table with two columns: food and why it is healthy. Keep it under 100 words.' }],
-      ex: [
-        { t: 'Answer in three bullet points, no more than 15 words each.' },
-        { t: 'Put the results in a table with two columns: word and meaning.' },
-        { t: 'Keep the tone friendly but professional.' },
-        { t: 'Write one paragraph, then add a short summary at the end.' }
-      ]
-    },
-    {
-      id: 'example', part: 2, title: 'Show an example', wpm: 23,
-      en: {
-        h: 'for example, such as, like',
-        p: 'Use these words to give examples:',
-        list: ['Use short words, such as “big” and “fast”.', 'For example, “huge” is stronger than “very big”.', 'Write it like this: “Fresh bread. Baked every morning.”']
-      },
-      ai: { h: 'Show, don’t only tell', p: 'An example is the fastest way to show what you want. Paste one sample of the style you like.' },
-      ba: [{ b: 'write descriptions for my products', a: 'Write descriptions for my 5 products in this style: "Soft cotton T-shirt. Fits well. Easy to wash."' }],
-      ex: [
-        { t: 'Write five product descriptions like this: "Soft cotton T-shirt. Easy to wash."' },
-        { t: 'Give me words similar to "happy", such as "glad" and "cheerful".' },
-        { t: 'Here is an example of my style: short sentences, simple words, no jokes.' },
-        { t: 'For example, instead of "very big", use a stronger word like "huge".' }
-      ]
-    },
-    {
-      id: 'questions', part: 2, title: 'Ask good questions', wpm: 23,
-      en: {
-        h: 'Word order in questions',
-        p: 'Question word + do/does/is + subject + verb.',
-        list: ['How do I reset my password?', 'What does this word mean? (not “What this word means?”)']
-      },
-      ai: { h: 'Be specific', p: 'Ask a specific question and add details. “How do I...?” with details gets a better answer than “help with my problem”.' },
-      ba: [{ b: 'bread problem', a: 'Why doesn\'t my bread rise? I use fresh yeast and warm water, and I wait 2 hours.' }],
-      ex: [
-        { t: 'How do I change the language on my phone?' },
-        { t: 'What does the phrase "break the ice" mean?' },
-        { t: 'Why doesn\'t my bread rise? I use fresh yeast and warm water.' },
-        { t: 'Which is correct: "on the weekend" or "at the weekend"?', n: 'Answer: both! “On the weekend” is American English. “At the weekend” is British English.' }
-      ]
-    },
-    {
-      id: 'problem', part: 2, title: 'Describe a problem', wpm: 24,
-      en: {
-        h: 'The past simple',
-        p: 'Use the past simple for what happened: I tried..., but it didn’t work. Many common verbs are irregular:',
-        list: ['go → went, see → saw, get → got, make → made', 'I tried to log in, but the page didn’t open.']
-      },
-      ai: { h: 'Three parts of a problem', p: 'Say what you wanted, what you did, and what happened instead. Copy any error message exactly.' },
-      ba: [{ b: 'printer not work help', a: 'I wanted to print a PDF, but the printer showed the error "Paper jam". I removed the paper and restarted it, but the error is still there.' }],
-      ex: [
-        { t: 'I wanted to print a PDF, but the printer showed an error.' },
-        { t: 'I tried to restart the computer, but nothing changed.' },
-        { t: 'Here is the exact error message: "File not found."' },
-        { t: 'I expected the page to open. Instead, the screen went white.' }
-      ]
-    },
-    {
-      id: 'articles', part: 2, title: 'a, an and the', wpm: 24,
-      en: {
-        h: 'Articles',
-        p: 'Many languages, like Czech or Polish, have no articles, so this takes practice.',
-        list: ['a/an: the first time, or any one: I have an idea.', 'the: the reader knows which one: The idea is simple.', 'no article: things in general: Apps are useful. Information is important.']
-      },
-      ai: { h: 'Small words, exact meaning', p: '“Fix the bug” means one bug that you both know. “Fix a bug” means any bug. Articles help Claude understand exactly what you mean.' },
-      ba: [{ b: 'I need new laptop. Old one is slow.', a: 'I need a new laptop. The old one is too slow.' }],
-      ex: [
-        { t: 'I have an idea for an app. The app helps people learn to type.', n: 'First “an app”, then “the app”.' },
-        { t: 'Can you read the text below and find the main idea?' },
-        { t: 'She is an engineer at a big company in the city center.' },
-        { t: 'I need a new laptop. The old one is too slow.' }
-      ]
-    },
-    {
-      id: 'linking', part: 2, title: 'Link your ideas', wpm: 24,
-      en: {
-        h: 'Linking words',
-        p: 'Order steps with first, then, finally. Add an idea with also. Show a contrast with but or however. Show a result with so.',
-        list: ['I like it. However, it is too expensive.']
-      },
-      ai: { h: 'Give your request an order', p: 'First the background, then the task, finally the format. Claude reads the request in that order too.' },
-      ba: [{ b: 'too long answer make shorter keep meaning', a: 'The answer was helpful, but it was too long, so please make it shorter. Also, keep my original meaning.' }],
-      ex: [
-        { t: 'First, read my text. Then, list the mistakes. Finally, write a corrected version.' },
-        { t: 'I like the first idea. However, it is too expensive.' },
-        { t: 'The answer was helpful, but it was too long, so please make it shorter.' },
-        { t: 'Also, please keep my original meaning.' }
-      ]
-    },
-    {
-      id: 'refine', part: 2, title: 'Improve the answer', wpm: 25,
-      en: {
-        h: 'Comparatives',
-        p: 'Short adjectives take -er: short → shorter, simple → simpler, clear → clearer. Long adjectives take more or less:',
-        list: ['more formal, more natural', 'less technical']
-      },
-      ai: { h: 'The first answer is a draft', p: 'Ask for changes: “Make it shorter.” “More formal, please.” “Try again with a friendly tone.” A chat with Claude is a conversation.' },
-      ba: [{ b: 'no not good', a: 'This is too formal. Make it friendlier and shorter, but keep the first sentence.' }],
-      ex: [
-        { t: 'Make it shorter and simpler, please.' },
-        { t: 'This is good, but can you make it more formal?' },
-        { t: 'Use less technical language. My readers are not experts.' },
-        { t: 'Keep the second paragraph, but rewrite the first one.' }
-      ]
-    },
-    {
-      id: 'mistakes', part: 2, title: 'Common mistakes', wpm: 25,
-      en: {
-        h: 'Wrong → right',
-        p: 'Learners of English often make these mistakes:',
-        list: ['I am agree → I agree', 'explain me → explain to me', 'informations, advices → information, advice', 'discuss about the plan → discuss the plan', 'make a photo → take a photo', 'depend of → depend on']
-      },
-      ai: { h: 'Find your weak points', p: 'Ask Claude: “Which mistakes do I repeat? Give me a short rule for each one.” It is a fast way to find what to practice.' },
-      ex: [
-        { t: 'I agree with you. Could you explain it to me again?' },
-        { t: 'Thank you for the information and the useful advice.' },
-        { t: 'Let\'s discuss the plan tomorrow. It depends on the weather.' },
-        { t: 'Can you take a photo of the document and send it to me?' }
-      ]
-    },
-    {
-      id: 'real-request', part: 2, title: 'Improve a real request', wpm: 25,
-      en: {
-        h: 'The request that created this app',
-        p: 'Claude understood it perfectly. Here is how to make it sound more natural:',
-        list: []
-      },
-      ai: { h: 'Clear requests get better apps', p: 'Say the goal, list the features one by one, and use full sentences. You did most of this already!' },
-      ba: [
-        { b: 'Create app for learn keyboard layout', a: 'Create an app for learning the keyboard layout.', why: '“an app” needs an article. Use “for learning” or “to learn”, not “for learn”.' },
-        { b: 'I want to learn to write with keyboard with my all 10 fingers', a: 'I want to learn to type with all ten fingers.', why: 'We “type” on a keyboard. Say “all ten fingers” (or “all my fingers”), not “my all”.' },
-        { b: 'Create lessons to learn 2 things at the same moment', a: 'Create lessons that teach two things at the same time.', why: 'The fixed phrase is “at the same time”.' },
-        { b: 'I want to better comunicate with you, and to learn my english writings skills', a: 'I want to communicate better with you and improve my English writing skills.', why: '“communicate” has two m’s. “English” takes a capital letter. Say “writing skills” and “improve” your skills.' },
-        { b: 'Make option to save progress', a: 'Add an option to save my progress.', why: '“an option” needs an article, and “add” fits better than “make” here.' }
-      ],
-      ex: [
-        { t: 'Create an app for learning the keyboard layout.' },
-        { t: 'I want to learn to type with all ten fingers.' },
-        { t: 'Please add an option to practice with my own texts.', n: 'American English: practice (verb and noun). British English: practise (verb).' },
-        { t: 'Create lessons that teach two things at the same time.' },
-        { t: 'I want to communicate better with you and improve my English writing skills.' },
-        { t: 'Add an option to save my progress and sync it between devices.' }
-      ]
-    },
-    {
-      id: 'your-request', part: 2, title: 'Write your own request', wpm: 25, coach: true,
-      en: {
-        h: 'Use everything you learned',
-        p: 'Write a real request about something you need this week. Then check it:',
-        list: ['Does it start with a clear verb?', 'Did you give context: who, why, what you know?', 'Did you choose a format and a length?', 'Articles, capital letters, punctuation?']
-      },
-      ai: { h: 'Get feedback, then type the better version', p: 'Claude checks your English and the clarity of your request. Then you type the corrected version. You practice typing, English and prompting in one exercise.' },
-      ex: []
-    }
   ];
 
   // Built-in texts for the Practice page.

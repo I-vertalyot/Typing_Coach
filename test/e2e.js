@@ -51,11 +51,26 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, headless: true });
 
+
+  // A text with the word "teacher", used by the weak-word tests.
+  const TEACHER = 'Write a short email to my teacher. Explain why I missed the class.';
+  const openTeacherText = async (page) => {
+    await page.evaluate((body) => {
+      const t = JSON.parse(localStorage.getItem('tt.texts.v1') || '{}');
+      t.t_teacher = { id: 't_teacher', title: 'Teacher email', body, createdAt: 1, updatedAt: 1, src: 'user' };
+      localStorage.setItem('tt.texts.v1', JSON.stringify(t));
+    }, TEACHER);
+    await page.goto(FILE + '#learn'); await page.reload(); await page.waitForSelector('.lessons');
+    await page.evaluate(() => { location.hash = '#practice'; }); await page.waitForSelector('.my-texts');
+    await page.click('.my-texts .text-row:has-text("Teacher email") .btn.primary'); await page.waitForSelector('.tt-inner');
+  };
+
   console.log('\n1. Local only (no Claude platform)');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
     ok((await page.textContent('#sync-btn')).includes('Saved on this device'), 'sync chip says saved on this device');
-    ok(await page.$$eval('.lesson-row', r => r.length) === 26, '26 lessons listed');
+    ok(await page.$$eval('.lesson-row', r => r.length) === 13, '13 lessons listed (Part 2 removed)');
+    ok(!/claude/i.test(await page.textContent('#app')), 'no Claude mentions on the Learn page');
     await shot(page, '01-learn');
     await page.click('text=Read the lesson first');
     await page.waitForSelector('.lesson-grid');
@@ -184,7 +199,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await A.page.click('text=Type the clearer request');
     await A.page.waitForSelector('.tt-inner');
     await typeExercise(A.page);
-    ok((await A.page.textContent('.result')).includes('Lesson complete'), 'typing the improved request completes lesson 26');
+    ok(await A.page.isVisible('.result'), 'typing the improved request shows the result');
     await A.page.waitForTimeout(2200);
     ok(JSON.parse(store.get('data/users/u_test1/journal') || '{}').entries.length === 1, 'coach feedback saved to the journal');
 
@@ -211,10 +226,10 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   {
     const D = await newDevice(browser, { mock: false, dark: true });
     await shot(D.page, '09-learn-dark');
-    await D.page.goto(FILE + '#lesson-14'); await D.page.waitForSelector('.lesson-grid');
-    await shot(D.page, '10-lesson14-dark');
+    await D.page.goto(FILE + '#lesson-13'); await D.page.waitForSelector('.lesson-grid');
+    await shot(D.page, '10-lesson13-dark');
     await D.page.click('.lesson-side .btn.primary'); await D.page.waitForSelector('.tt-inner');
-    await D.page.keyboard.type('Write a sh');
+    await D.page.keyboard.type('1 2 3');
     await shot(D.page, '11-typing-dark');
     ok(D.page.errors.length === 0, 'no page errors (dark)');
     await D.ctx.close();
@@ -403,16 +418,14 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
       await page.waitForSelector('.result:not([hidden])');
     };
     const card = async () => (await page.textContent('.drill:has-text("Your weak words")')).replace(/\s+/g, ' ');
-    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
-    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    await openTeacherText(page);
     await typeWithSlip('teacher');
     await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
     ok((await card()).includes('A word becomes weak when'), 'one mistake does not make a weak word: ' + await card());
     // earlier practice: teacher 3 right / 1 wrong (+ the slip above), missed 2 right / 3 wrong, short 6 right / 1 wrong
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1')); s.wordsByDev.seed = { w_teacher: [3, 0], w_missed: [1, 3], w_short: [5, 1] }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
     await page.reload(); await page.waitForSelector('.drills');
-    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
-    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    await openTeacherText(page);
     await typeWithSlip('teacher');
     await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
     const c = await card();
@@ -440,8 +453,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.goto(FILE + '#learn'); await page.waitForSelector('.lessons');
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1') || '{}'); s.wordsByDev = { seed: { w_teacher: [3, 1] } }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
     await page.reload(); await page.waitForSelector('.lessons');
-    await page.goto(FILE + '#lesson-14'); await page.waitForSelector('.lesson-grid');
-    await page.click('.ex-btn >> nth=0'); await page.waitForSelector('.tt-inner');
+    await openTeacherText(page);
     const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
     for (let i = 0; i < text.length; i++) { if (i === text.indexOf('teacher') + 2) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
     await page.waitForSelector('.result:not([hidden])');

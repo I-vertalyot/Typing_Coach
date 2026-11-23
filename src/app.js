@@ -551,7 +551,7 @@
       h('span', { class: 'riso-letter o', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
       h('span', { class: 'riso-letter g', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
       h('h1', { class: 'display' }, name ? 'Hi, ' + name + '. Ready to type?' : 'Ten fingers, clear English.'),
-      h('p', { class: 'lede' }, 'Learn to type without looking. Every lesson also teaches one English point and one tip for writing better requests to Claude.'));
+      h('p', { class: 'lede' }, 'Learn to type without looking. Every lesson also teaches one English point.'));
 
     let cont;
     if (ni === -1) {
@@ -569,8 +569,7 @@
           h('h2', { class: 'cont-title' }, l.title),
           l.part === 1 ? lessonKeys(l) : null,
           h('ul', { class: 'pair' },
-            h('li', null, h('span', { class: 'tag en' }, 'English'), l.en.h),
-            h('li', null, h('span', { class: 'tag ai' }, 'Claude'), l.ai.h))),
+            h('li', null, h('span', { class: 'tag en' }, 'English'), l.en.h))),
         h('div', { class: 'cta-row' },
           h('button', { class: 'btn primary big', type: 'button', onclick: () => startLesson(ni) },
             icon('play'), info.started ? 'Continue lesson ' + (ni + 1) : 'Start lesson ' + (ni + 1)),
@@ -590,8 +589,7 @@
 
   function courseList() {
     const parts = [
-      [1, 'Part 1 · Keyboard basics', 'New keys in every lesson. Short English and Claude tips.'],
-      [2, 'Part 2 · Writing with Claude', 'Whole sentences. Each lesson is one writing skill and one prompting skill.']
+      [1, 'Keyboard basics', 'New keys in every lesson, with a short English tip.']
     ];
     return h('div', { class: 'course' }, parts.map(([p, title, sub]) => h('section', { class: 'part' },
       sectionHead(title, sub),
@@ -607,7 +605,7 @@
               h('span', { class: 'lr-num' }, String(i + 1)),
               h('span', { class: 'lr-main' },
                 h('span', { class: 'lr-title' }, l.title),
-                h('span', { class: 'lr-sub' }, h('span', { class: 'tag en' }, 'English'), l.en.h, h('span', { class: 'tag ai' }, 'Claude'), l.ai.h)),
+                h('span', { class: 'lr-sub' }, h('span', { class: 'tag en' }, 'English'), l.en.h)),
               h('span', { class: 'lr-keys' }, lessonKeys(l)),
               h('span', { class: 'lr-status' }, status)));
         })))));
@@ -621,7 +619,7 @@
     const wrap = h('div', { class: 'wrap lesson' });
     wrap.append(h('a', { class: 'back', href: '#learn' }, icon('back'), 'All lessons'));
     wrap.append(h('header', { class: 'lesson-head' },
-      h('p', { class: 'muted small' }, 'Lesson ' + (idx + 1) + ' of ' + COURSE.length + ' · ' + (l.part === 1 ? 'Keyboard basics' : 'Writing with Claude')),
+      h('p', { class: 'muted small' }, 'Lesson ' + (idx + 1) + ' of ' + COURSE.length + ' · ' + 'Keyboard basics'),
       h('h1', { class: 'display' }, l.title),
       info.complete ? TT.starRow(info.stars, 3) : null));
 
@@ -645,7 +643,7 @@
         h('p', { class: 'kb-legend small muted' }, h('span', { class: 'lg new' }), 'new keys', h('span', { class: 'lg known' }), 'keys you know', h('span', { class: 'lg dim' }), 'later'),
         fingers));
     }
-    left.append(h('div', { class: 'tips' }, tipCard('en', 'English', l.en), tipCard('ai', 'Talking to Claude', l.ai)));
+    left.append(h('div', { class: 'tips' }, tipCard('en', 'English', l.en)));
     if (l.ba && l.ba.length) {
       left.append(h('section', { class: 'panel ba' },
         h('h3', null, l.id === 'real-request' ? 'Before and after' : 'Before and after'),
@@ -2054,7 +2052,7 @@
   function renderCoach(view) {
     const wrap = h('div', { class: 'wrap coach' });
     const ci = COURSE.findIndex(l => l.coach);
-    wrap.append(h('a', { class: 'back', href: '#lesson-' + (ci + 1) }, icon('back'), 'Lesson ' + (ci + 1)));
+    wrap.append(ci >= 0 ? h('a', { class: 'back', href: '#lesson-' + (ci + 1) }, icon('back'), 'Lesson ' + (ci + 1)) : h('a', { class: 'back', href: '#learn' }, icon('back'), 'Learn'));
     wrap.append(h('header', { class: 'page-head' },
       h('h1', { class: 'display' }, 'Writing coach'),
       h('p', { class: 'lede' }, 'Write a request to Claude in your own words. Get corrections for your English and tips for a clearer request. Then type the better version.')));
