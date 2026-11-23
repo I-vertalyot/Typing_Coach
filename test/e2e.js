@@ -69,7 +69,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
     ok((await page.textContent('#sync-btn')).includes('Saved on this device'), 'sync chip says saved on this device');
-    ok(await page.$$eval('.lesson-row', r => r.length) === 13, '13 lessons listed (Part 2 removed)');
+    ok(await page.$$eval('.lesson-row', r => r.length) === 16, '16 lessons listed');
     ok(!/claude/i.test(await page.textContent('#app')), 'no Claude mentions on the Learn page');
     await shot(page, '01-learn');
     await page.click('text=Read the lesson first');

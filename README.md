@@ -6,7 +6,7 @@ The app runs on claude.ai as an artifact: <https://claude.ai/artifact/W7HvM26Pnq
 
 ## Features
 
-- **13 lessons**, *Keyboard basics*, teach the keys from the home row to numbers, each with a short English tip. The drills use only keys you have already learned.
+- **16 lessons**, *Keyboard basics*, teach the keys from the home row to numbers, then the second layer of the number row (lessons 14–16: the Shift symbols such as ! " £ $ %, or ě š č ř ž ý á í é on Czech keyboards; built for your layout). Each lesson has a short English tip. The drills use only keys you have already learned.
 - **Finger guide.** An on-screen keyboard colored by finger, hands that show the finger for the next key, and a Shift hint for capital letters.
 - **Keyboard layouts.** English (US), English (UK), Czech (QWERTZ), Czech (QWERTY) and German (QWERTZ). If the selected layout doesn't match what your keyboard actually types, the app offers to switch.
 - **One moving line.** The text runs past a fixed cursor, like a ticker. You can switch to the whole text in a box in Options. The typing text is sans-serif for easy reading; monospace is an option.

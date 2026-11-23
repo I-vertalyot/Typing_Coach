@@ -214,7 +214,54 @@
         { t: 'The meeting is at 9:30 on May 12. Write a reminder for 15 people.' }
       ]
     },
+    // Lessons 14–16: the second layer of the number row. Their keys and texts are built for
+    // the learner's keyboard layout by TT.resolveCourse (core.js).
+    {
+      id: 'numrow-left', part: 1, numRow: [1, 5], title: 'Symbols on 1 to 5', newChars: '', show: [], wpm: 16,
+      en: { h: 'Reading symbols aloud', p: 'Say symbols as words when you read them:', list: ['! exclamation mark', '@ at: anna@mail.com is “anna at mail dot com”', '# hash', '£ pound, $ dollar, § section', '% percent: 20% is “twenty percent”'] },
+      ai: { h: '', p: '' }, ex: []
+    },
+    {
+      id: 'numrow-right', part: 1, numRow: [6, 10], title: 'Symbols on 6 to 0', newChars: '', show: [], wpm: 16,
+      en: { h: 'And, brackets and stars', p: 'Some symbols have short English names:', list: ['& and: Tom & Anna', '( ) brackets: (see page 4)', '* star or asterisk', '/ slash: yes/no'] },
+      ai: { h: '', p: '' }, ex: []
+    },
+    {
+      id: 'numrow-all', part: 1, numRow: [1, 10], title: 'The whole top row', newChars: '', show: [], wpm: 18,
+      en: { h: 'Prices and percent', p: 'The currency sign comes before the number, the percent sign after it:', list: ['$25, £12 (but in Czech: 25 Kč)', '20% off', 'It costs $5. It went up by 10%.'] },
+      ai: { h: '', p: '' }, ex: []
+    }
   ];
+
+  // Example sentences for each number-row symbol. A sentence is used only when
+  // every character in it is already learned on the learner's layout.
+  TT.SYMBOL_SENTENCES = {
+    '!': ['Well done!', 'Stop! Look at the map!'],
+    '@': ['Write to anna@mail.com today.', 'My email is tom@work.org.'],
+    '"': ['"Hi," said Tom.', 'She said: "Thank you."'],
+    '#': ['Room #4 is on the left.', 'Use the tag #typing.'],
+    '£': ['The ticket costs £12.', 'I paid £5 for a coffee.'],
+    '$': ['It costs $25.', 'I have $100 in the bank.'],
+    '§': ['Read § 3 of the law.', 'The rule is in § 12.'],
+    '%': ['Save 20% today.', 'The test was 95% right.'],
+    '^': ['2^3 is 8.', 'Write 10^2 for ten squared.'],
+    '&': ['Tom & Anna are here.', 'The Q&A starts at 3 pm.'],
+    '*': ['5 * 4 is 20.', 'Read the note with a *.'],
+    '/': ['The shop is open 24/7.', 'Answer yes/no.'],
+    '(': ['Call me (after 6 pm).', 'Read part 2 (page 14).'],
+    ')': ['Call me (after 6 pm).', 'Read part 2 (page 14).'],
+    '=': ['5 = five', 'x = 10 and y = 20'],
+    '+': ['2 + 3 is 5.', 'Add +1 to the score.'],
+    'ě': ['Věra je tady.', 'Je to pět let.', 'Děkuji, to je hezké město.'],
+    'š': ['Je mi šest let.', 'Naše škola je tady.'],
+    'č': ['Kolik je času?', 'Čtu často.'],
+    'ř': ['Tři psi jsou tady.', 'Řeknu to Petrovi.'],
+    'ž': ['Žena čte knihu.', 'Život je krásný.'],
+    'ý': ['Dobrý den!', 'Je to malý dům.'],
+    'á': ['Máma je doma.', 'Dávám ti kávu.'],
+    'í': ['Prosím, jdi dál.', 'Chci jít ven.'],
+    'é': ['Mléko je dobré.', 'Je to pěkné léto.']
+  };
 
   // Built-in texts for the Practice page.
   TT.STARTERS = [

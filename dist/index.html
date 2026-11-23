@@ -908,7 +908,54 @@ h2, h3, .lr-title { font-weight: 800; }
         { t: 'The meeting is at 9:30 on May 12. Write a reminder for 15 people.' }
       ]
     },
+    // Lessons 14–16: the second layer of the number row. Their keys and texts are built for
+    // the learner's keyboard layout by TT.resolveCourse (core.js).
+    {
+      id: 'numrow-left', part: 1, numRow: [1, 5], title: 'Symbols on 1 to 5', newChars: '', show: [], wpm: 16,
+      en: { h: 'Reading symbols aloud', p: 'Say symbols as words when you read them:', list: ['! exclamation mark', '@ at: anna@mail.com is “anna at mail dot com”', '# hash', '£ pound, $ dollar, § section', '% percent: 20% is “twenty percent”'] },
+      ai: { h: '', p: '' }, ex: []
+    },
+    {
+      id: 'numrow-right', part: 1, numRow: [6, 10], title: 'Symbols on 6 to 0', newChars: '', show: [], wpm: 16,
+      en: { h: 'And, brackets and stars', p: 'Some symbols have short English names:', list: ['& and: Tom & Anna', '( ) brackets: (see page 4)', '* star or asterisk', '/ slash: yes/no'] },
+      ai: { h: '', p: '' }, ex: []
+    },
+    {
+      id: 'numrow-all', part: 1, numRow: [1, 10], title: 'The whole top row', newChars: '', show: [], wpm: 18,
+      en: { h: 'Prices and percent', p: 'The currency sign comes before the number, the percent sign after it:', list: ['$25, £12 (but in Czech: 25 Kč)', '20% off', 'It costs $5. It went up by 10%.'] },
+      ai: { h: '', p: '' }, ex: []
+    }
   ];
+
+  // Example sentences for each number-row symbol. A sentence is used only when
+  // every character in it is already learned on the learner's layout.
+  TT.SYMBOL_SENTENCES = {
+    '!': ['Well done!', 'Stop! Look at the map!'],
+    '@': ['Write to anna@mail.com today.', 'My email is tom@work.org.'],
+    '"': ['"Hi," said Tom.', 'She said: "Thank you."'],
+    '#': ['Room #4 is on the left.', 'Use the tag #typing.'],
+    '£': ['The ticket costs £12.', 'I paid £5 for a coffee.'],
+    '$': ['It costs $25.', 'I have $100 in the bank.'],
+    '§': ['Read § 3 of the law.', 'The rule is in § 12.'],
+    '%': ['Save 20% today.', 'The test was 95% right.'],
+    '^': ['2^3 is 8.', 'Write 10^2 for ten squared.'],
+    '&': ['Tom & Anna are here.', 'The Q&A starts at 3 pm.'],
+    '*': ['5 * 4 is 20.', 'Read the note with a *.'],
+    '/': ['The shop is open 24/7.', 'Answer yes/no.'],
+    '(': ['Call me (after 6 pm).', 'Read part 2 (page 14).'],
+    ')': ['Call me (after 6 pm).', 'Read part 2 (page 14).'],
+    '=': ['5 = five', 'x = 10 and y = 20'],
+    '+': ['2 + 3 is 5.', 'Add +1 to the score.'],
+    'ě': ['Věra je tady.', 'Je to pět let.', 'Děkuji, to je hezké město.'],
+    'š': ['Je mi šest let.', 'Naše škola je tady.'],
+    'č': ['Kolik je času?', 'Čtu často.'],
+    'ř': ['Tři psi jsou tady.', 'Řeknu to Petrovi.'],
+    'ž': ['Žena čte knihu.', 'Život je krásný.'],
+    'ý': ['Dobrý den!', 'Je to malý dům.'],
+    'á': ['Máma je doma.', 'Dávám ti kávu.'],
+    'í': ['Prosím, jdi dál.', 'Chci jít ven.'],
+    'é': ['Mléko je dobré.', 'Je to pěkné léto.']
+  };
 
   // Built-in texts for the Practice page.
   TT.STARTERS = [
@@ -1315,6 +1362,57 @@ h2, h3, .lr-title { font-weight: 800; }
     if (acc < 95) return 1;
     if (acc >= 97 && wpm >= target) return 3;
     return 2;
+  };
+
+  // Fill the number-row lessons (numRow: [from, to] digit positions, 1–10 = keys 1…0) for a layout.
+  // "The other layer" of a digit key is the character on it that is not the digit:
+  // with Shift on English and German keyboards, without Shift on Czech ones.
+  TT.numRowLayer = function (layout) {
+    const out = [];
+    for (let i = 1; i <= 10; i++) {
+      const d = String(i % 10), m = layout.map['Digit' + d] || [];
+      const other = m.find(c => c && c !== d && !(c[0] === '~' && c.length > 1));
+      if (other) out.push({ pos: i, digit: d, sym: other, shift: m[1] === other });
+    }
+    return out;
+  };
+  TT.resolveCourse = function (course, layout) {
+    const layer = TT.numRowLayer(layout);
+    const czechTop = layer.some(x => !x.shift);
+    course.forEach((l, idx) => {
+      if (!l.numRow) return;
+      const [a, b] = l.numRow;
+      const mine = layer.filter(x => x.pos >= a && x.pos <= b);
+      const before = TT.allowedChars(course, idx - 1); // earlier number-row lessons are already resolved
+      const syms = mine.map(x => x.sym);
+      l.newChars = syms.filter(c => !before.has(c)).join('');
+      l.show = syms.slice();
+      const allowed = new Set(before); syms.forEach(c => allowed.add(c));
+      l.intro = czechTop
+        ? 'On a Czech keyboard the top row types these letters without Shift: ' + syms.join(' ') + '. Use the same finger as for the number on that key.'
+        : 'Hold Shift and press a number key to type its symbol: ' + syms.join(' ') + '. Use the same finger as for the number, and the little finger of the other hand for Shift.';
+      const pairs = mine.map(x => czechTop ? x.sym + x.digit : x.digit + x.sym);
+      const drill1 = mine.map(x => [x.sym, x.sym + x.sym, czechTop ? x.sym + x.digit : x.digit + x.sym].join(' ')).join(' ');
+      const rev = syms.slice().reverse();
+      const drill2 = l.numRow[1] - l.numRow[0] > 5
+        ? syms.join('') + ' ' + rev.join('') + ' ' + pairs.join(' ')
+        : syms.join(' ') + ' ' + rev.join(' ') + ' ' + syms.join('') + ' ' + rev.join('');
+      const fits = (t) => t.split('').every(c => allowed.has(c));
+      const sentences = (k) => {
+        const seen = new Set(), out = [];
+        syms.forEach(c => {
+          const list = (TT.SYMBOL_SENTENCES[c] || []).filter(fits);
+          const t = list[k % list.length] || list[0];
+          if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+        });
+        return out.join(' ');
+      };
+      l.ex = [{ t: drill1, n: 'Say each symbol as you type it.' }, { t: drill2 }];
+      const s0 = sentences(0), s1 = sentences(1);
+      if (s0) l.ex.push({ t: s0 });
+      if (s1 && s1 !== s0) l.ex.push({ t: s1 });
+    });
+    return course;
   };
 
   // Characters a learner knows after finishing part-1 lessons up to index `upTo` (inclusive).
@@ -2388,6 +2486,7 @@ h2, h3, .lr-title { font-weight: 800; }
   function applyLayout() {
     const id = App.state.settings.layout || guessLayout();
     App.layout = TT.buildLayout(id);
+    TT.resolveCourse(COURSE, App.layout); // the number-row symbol lessons depend on the layout
   }
   function setLayout(id) {
     App.state.settings.layout = id;
@@ -3008,8 +3107,7 @@ h2, h3, .lr-title { font-weight: 800; }
         sess.target ? h('p', { class: 'small muted' }, '3 stars: 97% accuracy and ' + sess.target + ' words per minute.') : null,
         out.lessonDone ? h('div', { class: 'res-lesson' },
           h('strong', null, 'Lesson complete!'), ' You learned: ',
-          h('span', { class: 'tag en' }, 'English'), out.lessonDone.en.h, ' ',
-          h('span', { class: 'tag ai' }, 'Claude'), out.lessonDone.ai.h) : null,
+          h('span', { class: 'tag en' }, 'English'), out.lessonDone.en.h) : null,
         out.message ? h('p', null, out.message) : null,
         h('div', { class: 'res-actions' },
           secondary ? h('button', { class: 'btn ghost', type: 'button', onclick: secondary.act }, icon('retry'), secondary.label, h('span', { class: 'kbd-hint' }, 'Esc')) : null,

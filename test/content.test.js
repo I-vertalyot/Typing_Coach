@@ -16,9 +16,27 @@ TT.COURSE.forEach((l, idx) => {
   });
 });
 
+// 1b. Number-row lessons: built for every layout, typeable there, only learned characters
+TT.PRESET_ORDER.forEach(id => {
+  const lay = TT.buildLayout(id);
+  TT.resolveCourse(TT.COURSE, lay);
+  TT.COURSE.forEach((l, idx) => {
+    if (!l.numRow) return;
+    if (l.ex.length < 3) bad(`${id} ${l.id}: only ${l.ex.length} exercises`);
+    if (l.show.length !== l.numRow[1] - l.numRow[0] + 1) bad(`${id} ${l.id}: shows ${l.show.join('')}`);
+    const allowed = TT.allowedChars(TT.COURSE, idx);
+    l.ex.forEach((e, i) => {
+      const extra = [...new Set(e.t.split('').filter(c => !allowed.has(c)))];
+      if (extra.length) bad(`${id} ${l.id} ex${i + 1} uses not-yet-learned: ${JSON.stringify(extra.join(''))}`);
+      const miss = [...new Set(e.t.split('').filter(c => !lay.charToKey[c]))];
+      if (miss.length) bad(`${id} ${l.id} ex${i + 1} cannot be typed: ${JSON.stringify(miss.join(''))}`);
+    });
+  });
+});
+
 // 2. Every character typeable on every layout
 const all = new Set();
-TT.COURSE.forEach(l => l.ex.forEach(e => e.t.split('').forEach(c => all.add(c))));
+TT.COURSE.forEach(l => { if (!l.numRow) l.ex.forEach(e => e.t.split('').forEach(c => all.add(c))); });
 TT.STARTERS.forEach(s => s.body.split('').forEach(c => all.add(c)));
 TT.LIBRARY.forEach(l => TT.cleanText(l.text).split('').forEach(c => all.add(c)));
 const libIds = TT.LIBRARY.map(l => l.id); if (new Set(libIds).size !== libIds.length || libIds.some(id => !/^[a-z0-9-]+$/.test(id))) bad('library ids must be unique and use a-z 0-9 -');

@@ -91,6 +91,57 @@
     return 2;
   };
 
+  // Fill the number-row lessons (numRow: [from, to] digit positions, 1–10 = keys 1…0) for a layout.
+  // "The other layer" of a digit key is the character on it that is not the digit:
+  // with Shift on English and German keyboards, without Shift on Czech ones.
+  TT.numRowLayer = function (layout) {
+    const out = [];
+    for (let i = 1; i <= 10; i++) {
+      const d = String(i % 10), m = layout.map['Digit' + d] || [];
+      const other = m.find(c => c && c !== d && !(c[0] === '~' && c.length > 1));
+      if (other) out.push({ pos: i, digit: d, sym: other, shift: m[1] === other });
+    }
+    return out;
+  };
+  TT.resolveCourse = function (course, layout) {
+    const layer = TT.numRowLayer(layout);
+    const czechTop = layer.some(x => !x.shift);
+    course.forEach((l, idx) => {
+      if (!l.numRow) return;
+      const [a, b] = l.numRow;
+      const mine = layer.filter(x => x.pos >= a && x.pos <= b);
+      const before = TT.allowedChars(course, idx - 1); // earlier number-row lessons are already resolved
+      const syms = mine.map(x => x.sym);
+      l.newChars = syms.filter(c => !before.has(c)).join('');
+      l.show = syms.slice();
+      const allowed = new Set(before); syms.forEach(c => allowed.add(c));
+      l.intro = czechTop
+        ? 'On a Czech keyboard the top row types these letters without Shift: ' + syms.join(' ') + '. Use the same finger as for the number on that key.'
+        : 'Hold Shift and press a number key to type its symbol: ' + syms.join(' ') + '. Use the same finger as for the number, and the little finger of the other hand for Shift.';
+      const pairs = mine.map(x => czechTop ? x.sym + x.digit : x.digit + x.sym);
+      const drill1 = mine.map(x => [x.sym, x.sym + x.sym, czechTop ? x.sym + x.digit : x.digit + x.sym].join(' ')).join(' ');
+      const rev = syms.slice().reverse();
+      const drill2 = l.numRow[1] - l.numRow[0] > 5
+        ? syms.join('') + ' ' + rev.join('') + ' ' + pairs.join(' ')
+        : syms.join(' ') + ' ' + rev.join(' ') + ' ' + syms.join('') + ' ' + rev.join('');
+      const fits = (t) => t.split('').every(c => allowed.has(c));
+      const sentences = (k) => {
+        const seen = new Set(), out = [];
+        syms.forEach(c => {
+          const list = (TT.SYMBOL_SENTENCES[c] || []).filter(fits);
+          const t = list[k % list.length] || list[0];
+          if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+        });
+        return out.join(' ');
+      };
+      l.ex = [{ t: drill1, n: 'Say each symbol as you type it.' }, { t: drill2 }];
+      const s0 = sentences(0), s1 = sentences(1);
+      if (s0) l.ex.push({ t: s0 });
+      if (s1 && s1 !== s0) l.ex.push({ t: s1 });
+    });
+    return course;
+  };
+
   // Characters a learner knows after finishing part-1 lessons up to index `upTo` (inclusive).
   TT.allowedChars = function (course, upTo) {
     const set = new Set([' ']);

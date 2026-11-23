@@ -390,6 +390,7 @@
   function applyLayout() {
     const id = App.state.settings.layout || guessLayout();
     App.layout = TT.buildLayout(id);
+    TT.resolveCourse(COURSE, App.layout); // the number-row symbol lessons depend on the layout
   }
   function setLayout(id) {
     App.state.settings.layout = id;
@@ -1010,8 +1011,7 @@
         sess.target ? h('p', { class: 'small muted' }, '3 stars: 97% accuracy and ' + sess.target + ' words per minute.') : null,
         out.lessonDone ? h('div', { class: 'res-lesson' },
           h('strong', null, 'Lesson complete!'), ' You learned: ',
-          h('span', { class: 'tag en' }, 'English'), out.lessonDone.en.h, ' ',
-          h('span', { class: 'tag ai' }, 'Claude'), out.lessonDone.ai.h) : null,
+          h('span', { class: 'tag en' }, 'English'), out.lessonDone.en.h) : null,
         out.message ? h('p', null, out.message) : null,
         h('div', { class: 'res-actions' },
           secondary ? h('button', { class: 'btn ghost', type: 'button', onclick: secondary.act }, icon('retry'), secondary.label, h('span', { class: 'kbd-hint' }, 'Esc')) : null,
