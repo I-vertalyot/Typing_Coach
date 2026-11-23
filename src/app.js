@@ -1014,7 +1014,7 @@
           h('span', { class: 'tag en' }, 'English'), out.lessonDone.en.h) : null,
         out.message ? h('p', null, out.message) : null,
         h('div', { class: 'res-actions' },
-          secondary ? h('button', { class: 'btn ghost', type: 'button', onclick: secondary.act }, icon('retry'), secondary.label, h('span', { class: 'kbd-hint' }, 'Esc')) : null,
+          secondary ? h('button', { class: 'btn ghost', type: 'button', onclick: secondary.act }, icon('retry'), secondary.label) : null,
           h('button', { class: 'btn primary', type: 'button', onclick: primary.act }, primary.label, h('span', { class: 'kbd-hint' }, 'Enter'))));
       result.hidden = false;
       box.classList.add('finished');
@@ -1040,17 +1040,19 @@
       banner.hidden = false;
     }
 
+    // Esc leaves the exercise, the same as the back link at the top.
+    const leave = () => { const a = head.querySelector('.back'); if (a) a.click(); };
     App.keyHandler = function (e) {
       if (e.getModifierState) caps.hidden = !e.getModifierState('CapsLock');
       if (done) {
         if (e.key === 'Enter') { e.preventDefault(); App.resultKeys.enter(); }
-        else if (e.key === 'Escape') { e.preventDefault(); App.resultKeys.esc(); }
+        else if (e.key === 'Escape') { e.preventDefault(); leave(); }
         return;
       }
       if (e.ctrlKey || e.metaKey) return;
       if (e.altKey && !(e.getModifierState && e.getModifierState('AltGraph'))) return;
       const k = e.key;
-      if (k === 'Escape') { e.preventDefault(); restart(); return; }
+      if (k === 'Escape') { e.preventDefault(); leave(); return; }
       if (k === 'Backspace') { e.preventDefault(); backspace(); return; }
       if (k === 'Tab') return;
       if (k === 'Enter') { e.preventDefault(); return; }
@@ -1094,6 +1096,7 @@
     const t = e.target;
     if (t && t.closest && t.closest('input, textarea:not(.sink), select, [contenteditable="true"]')) return;
     if (App.keyHandler) App.keyHandler(e);
+    else if (e.key === 'Escape' && App.view === 'lesson') { e.preventDefault(); location.hash = '#learn'; }
   });
 
   // ───────────────────────── Steno basics (court reporters' machine shorthand) ─────────────────────────
@@ -1291,15 +1294,15 @@
             h('span', { class: 'rn' }, h('strong', null, fmtClock(ms)), h('span', null, 'time')))),
         h('p', { class: 'small muted' }, '3 stars: 97% correct chords and 15 words per minute.'),
         h('div', { class: 'res-actions' },
-          h('button', { class: 'btn ghost', type: 'button', onclick: () => startSteno(li) }, icon('retry'), 'Try again', h('span', { class: 'kbd-hint' }, 'Esc')),
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => startSteno(li) }, icon('retry'), 'Try again'),
           h('button', { class: 'btn primary', type: 'button', onclick: () => next ? startSteno(li + 1) : (location.hash = '#steno', render()) }, next ? 'Next lesson' : 'Back to Steno basics', h('span', { class: 'kbd-hint' }, 'Enter'))));
       result.hidden = false;
       App.resultKeys = { enter: () => next ? startSteno(li + 1) : (location.hash = '#steno', render()), esc: () => startSteno(li) };
     }
     App.keyHandler = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); const a = tw.querySelector('.back'); if (a) a.click(); return; }
       if (done) {
         if (e.key === 'Enter') { e.preventDefault(); App.resultKeys.enter(); }
-        else if (e.key === 'Escape') { e.preventDefault(); App.resultKeys.esc(); }
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;

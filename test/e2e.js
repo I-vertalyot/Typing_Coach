@@ -86,7 +86,9 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.keyboard.type('ff');
     await shot(page, '03-typing');
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(50);
+    await page.waitForSelector('.lesson-grid');
+    ok(!(await page.$('.tt-inner')), 'Esc leaves the exercise and goes back to the lesson page');
+    await page.click('.lesson-side .btn.primary'); await page.waitForSelector('.tt-inner');
     await typeExercise(page);
     ok(await page.$eval('.result .stars', e => e.getAttribute('aria-label')).then ? true : true, 'result shown');
     const label = await page.$eval('.result .stars', e => e.getAttribute('aria-label'));
@@ -615,6 +617,29 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await typeExercise(page);
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
     ok((await page.textContent(row)).includes('Finished 2 times'), 'counter shows 2 times');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
+  console.log('\n17. Esc leaves every exercise');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#lesson-2'); await page.waitForSelector('.lesson-grid');
+    await page.click('.lesson-side .btn.primary'); await page.waitForSelector('.tt-inner');
+    await typeExercise(page);
+    await page.keyboard.press('Escape'); await page.waitForSelector('.lesson-grid');
+    ok(true, 'Esc on the result screen goes back to the lesson page');
+    await page.keyboard.press('Escape'); await page.waitForSelector('.lessons');
+    ok(true, 'Esc on a lesson page goes back to all lessons');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await page.click('.drill:has-text("Common English words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    await page.keyboard.type('xx');
+    await page.keyboard.press('Escape'); await page.waitForSelector('.drills');
+    ok(!(await page.$('.tt-inner')), 'Esc leaves a practice drill');
+    await page.goto(FILE + '#steno'); await page.waitForSelector('.steno');
+    await page.click('.steno-list .ex-btn >> nth=0'); await page.waitForSelector('.steno-drill');
+    await page.keyboard.press('Escape'); await page.waitForSelector('.steno:not(.steno-drill)');
+    ok(!(await page.$('.steno-drill')), 'Esc leaves a steno drill');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
