@@ -206,7 +206,7 @@
   TT.defaultState = function () {
     return {
       v: 1,
-      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0, typeFont: 'sans', commonCount: 200, theme: 'auto' },
+      settings: { layout: '', onError: 'stop', showKb: true, showHands: true, sound: 'errors', size: 'm', goal: 10, speed: 1, pickKeys: '', pickMode: 'only', textView: 'line', drillTime: 0, typeFont: 'sans', commonCount: 200, theme: 'auto', metronome: 0 },
       settingsAt: 0,
       lessons: {},       // lessonId → { ex: { i: {s, w, a} } }
       history: [],       // { id, t, k, r, title, w, a, c, d }

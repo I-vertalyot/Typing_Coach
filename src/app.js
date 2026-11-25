@@ -772,6 +772,50 @@
     saveState();
   }
 
+  // ───────────────────────── Metronome ─────────────────────────
+  // One beat per key: at W words per minute that is W × 5 keys a minute. Every 5th beat is
+  // accented, like one word. It starts with your first key and stops when the exercise ends.
+  // settings.metronome: 0 = off, -1 = your speed + 10%, otherwise a speed in WPM.
+  const METRO_OPTIONS = [[0, 'Off'], [-1, 'My speed + 10%'], [15, '15 WPM'], [20, '20 WPM'], [25, '25 WPM'], [30, '30 WPM'], [35, '35 WPM'], [40, '40 WPM'], [50, '50 WPM'], [60, '60 WPM'], [70, '70 WPM'], [80, '80 WPM']];
+  function recentWpm() {
+    const h = App.state.history.filter(x => x.w > 0 && x.a >= 85).slice(-10);
+    if (!h.length) return 0;
+    return h.reduce((a, x) => a + x.w, 0) / h.length;
+  }
+  function metroWpm() {
+    const v = Number(App.state.settings.metronome) || 0;
+    if (v === -1) return Math.max(12, Math.min(120, Math.round((recentWpm() || 18) * 1.1)));
+    return Math.max(0, v);
+  }
+  const Metro = {
+    timer: null, next: 0, n: 0, wpm: 0, onBeat: null,
+    start(onBeat) {
+      this.stop();
+      this.wpm = metroWpm();
+      if (!this.wpm) return;
+      const ctx = TT.Sound.ensure();
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+      this.onBeat = onBeat; this.n = 0; this.next = performance.now() + 50;
+      // Look ahead 100 ms. The beat times come from one steady clock; the sound is scheduled
+      // on the audio clock at the same moment, so the rhythm stays even.
+      const tick = () => {
+        const step = 60000 / (this.wpm * 5), now = performance.now();
+        while (this.next < now + 100) {
+          const accent = this.n % 5 === 0, delay = Math.max(0, this.next - now);
+          if (ctx && ctx.state === 'running') TT.Sound.beat(ctx.currentTime + delay / 1000, accent);
+          const cb = this.onBeat;
+          if (cb) setTimeout(() => cb(accent), delay);
+          this.next += step; this.n++;
+        }
+      };
+      tick();
+      this.timer = setInterval(tick, 25);
+    },
+    setWpm() { if (this.timer) { this.wpm = metroWpm(); if (!this.wpm) this.stop(); } },
+    stop() { clearInterval(this.timer); this.timer = null; this.onBeat = null; },
+    get running() { return !!this.timer; }
+  };
+
   // ───────────────────────── Typing engine + view ─────────────────────────
   const Typing = {
     active: false, sess: null, timer: null,
@@ -789,13 +833,14 @@
     },
     stop() {
       this.active = false;
+      Metro.stop();
       clearInterval(this.timer);
       clearTimeout(this.endTimer);
       App.keyHandler = null;
       if (P.tts && P.tts.stop) { try { P.tts.stop(); } catch (e) { /* ignore */ } }
     }
   };
-  TT.Typing = Typing;
+  TT.Typing = Typing; TT.Metro = Metro;
 
   function buildTyping(view, sess) {
     const S = App.state.settings;
@@ -818,7 +863,20 @@
 
     const listen = h('button', { class: 'btn ghost small', type: 'button', 'data-listen': '1', hidden: !P.tts, onclick: () => speak(text, sess.lang) }, icon('speaker'), 'Listen');
     const extraBtn = sess.extra ? h('button', { class: 'btn danger-ghost small', type: 'button', onclick: sess.extra.act }, icon('retry'), sess.extra.label) : null;
-    const noteRow = h('div', { class: 'ty-note' }, sess.note ? h('p', null, sess.note) : h('p', { class: 'muted' }, 'Type the text below. Keep your eyes on the screen.'), h('div', { class: 'cta-row' }, listen, extraBtn));
+    const metroDot = h('span', { class: 'metro-dot', 'aria-hidden': 'true' });
+    const metroSlot = h('span', { class: 'metro-slot' });
+    const paintMetro = () => {
+      metroSlot.textContent = '';
+      const m = metroPicker((v) => {
+        if (Metro.running) Metro.setWpm();
+        else if (start && !done && metroWpm()) Metro.start(onBeat);
+        paintMetro();
+      });
+      metroSlot.append(m, metroDot);
+    };
+    const onBeat = (accent) => { metroDot.classList.remove('on', 'acc'); void metroDot.offsetWidth; metroDot.classList.add('on'); if (accent) metroDot.classList.add('acc'); };
+    paintMetro();
+    const noteRow = h('div', { class: 'ty-note' }, sess.note ? h('p', null, sess.note) : h('p', { class: 'muted' }, 'Type the text below. Keep your eyes on the screen.'), h('div', { class: 'cta-row' }, metroSlot, listen, extraBtn));
 
     const inner = h('div', { class: 'tt-inner' });
     const spans = chars.map((c, i) => {
@@ -919,6 +977,7 @@
       const now = performance.now();
       if (!start) {
         start = now; last = now;
+        if (metroWpm()) Metro.start(onBeat);
         if (limit) { clearTimeout(Typing.endTimer); Typing.endTimer = setTimeout(() => { if (!done) finish(true); }, limit); }
       }
       else { active += Math.min(now - last, 3000); last = now; }
@@ -965,6 +1024,7 @@
       const ms0 = limit ? (timeUp ? limit : Math.min(limit, performance.now() - start)) : 0;
       done = true;
       finalMs = ms0;
+      Metro.stop();
       clearInterval(Typing.timer);
       clearTimeout(Typing.endTimer);
       spans.forEach(sp => sp.classList.remove('cur'));
@@ -1927,6 +1987,21 @@
     render();
     TT.toast('Timer: ' + label + '.');
   }
+  function metroPicker(after, alignLeft) {
+    const v = Number(App.state.settings.metronome) || 0;
+    const opts = METRO_OPTIONS.map(([x, l]) => [x, x === -1 && x === v ? 'My speed + 10% (' + metroWpm() + ' WPM)' : l]);
+    const m = menuButton({ id: 'metro', label: 'Metronome', options: opts, value: v, align: alignLeft ? 'left' : undefined, onPick: (x) => {
+      App.state.settings.metronome = x; App.state.settingsAt = Date.now(); saveState();
+      TT.toast(x ? 'Metronome: ' + metroWpm() + ' words per minute (' + metroWpm() * 5 + ' keys a minute). Type one key on each beat.' : 'Metronome off.');
+      if (after) after(x);
+    } });
+    const btn = m.querySelector('.len-btn');
+    btn.classList.add('metro-btn');
+    btn.prepend(icon('metro'));
+    btn.setAttribute('aria-label', 'Metronome: ' + btn.querySelector('strong').textContent);
+    btn.title = 'Metronome: one beat per key';
+    return m;
+  }
   const COMMON_COUNTS = [50, 100, 200, 500, 1000];
   const commonCount = () => COMMON_COUNTS.includes(Number(App.state.settings.commonCount)) ? Number(App.state.settings.commonCount) : 200;
   function commonPicker() {
@@ -2405,6 +2480,9 @@
         h('div', { class: 'row-inline' }, [['line', 'One moving line'], ['box', 'Whole text in a box']].map(([v, l]) => radio('view', v, l, S.textView || 'line', x => set('textView', x)))),
         h('p', { class: 'opt-q' }, 'Text size'),
         h('div', { class: 'row-inline' }, [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']].map(([v, l]) => radio('size', v, l, S.size, x => set('size', x)))),
+        h('p', { class: 'opt-q' }, 'Metronome'),
+        h('div', { class: 'row-inline' }, metroPicker(() => render(), true)),
+        h('p', { class: 'small muted' }, 'A beat for every key, so you type in an even rhythm. It starts with your first key. Every 5th beat is louder: that is one word. You can also change it on every exercise screen.'),
         h('p', { class: 'opt-q' }, 'Sounds'),
         h('div', { class: 'row-inline' }, [['off', 'Off'], ['errors', 'Mistakes only'], ['all', 'Every key']].map(([v, l]) => radio('sound', v, l, S.sound, x => set('sound', x))))),
       group('Goals',

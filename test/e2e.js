@@ -673,6 +673,32 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n19. Metronome');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#lesson-1'); await page.waitForSelector('.lesson-grid');
+    await page.click('.lesson-side .btn.primary'); await page.waitForSelector('.metro-btn');
+    ok((await page.textContent('.metro-btn')).includes('Off'), 'metronome starts off');
+    await page.click('.metro-btn'); await page.click('#menu-pop-metro .len-opt >> text=30 WPM');
+    ok((await page.textContent('.metro-btn')).includes('30 WPM'), 'metronome set on the exercise screen');
+    ok(!(await page.evaluate(() => TT.Metro.running)), 'it waits for the first key');
+    await page.keyboard.type('f');
+    ok(await page.evaluate(() => TT.Metro.running && TT.Metro.wpm === 30), 'it starts with the first key at 30 WPM');
+    await page.waitForTimeout(1000);
+    const n = await page.evaluate(() => TT.Metro.n);
+    ok(n >= 3 && n <= 5, 'one beat every 0.4 s at 30 WPM (150 keys a minute): ' + n + ' beats in 1 s');
+    await page.click('.metro-btn'); await page.click('#menu-pop-metro .len-opt >> text=60 WPM');
+    ok(await page.evaluate(() => TT.Metro.wpm === 60), 'changing the speed while typing takes effect at once');
+    await typeExercise(page);
+    ok(!(await page.evaluate(() => TT.Metro.running)), 'it stops when the exercise ends');
+    await page.goto(FILE + '#options'); await page.waitForSelector('.options .metro-btn');
+    ok((await page.textContent('.options .metro-btn')).includes('60 WPM'), 'Options shows the same setting');
+    await page.click('.options .metro-btn'); await page.click('#menu-pop-metro .len-opt >> text=My speed');
+    ok((await page.textContent('.options .metro-btn')).includes('My speed + 10% ('), 'my speed + 10% shows the speed it uses');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

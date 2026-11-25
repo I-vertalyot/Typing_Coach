@@ -47,6 +47,7 @@
     speaker: '<path d="M4 8h3l4-3.2v10.4L7 12H4z"/><path d="M14 7.5a3.5 3.5 0 0 1 0 5M16.2 5.4a6.5 6.5 0 0 1 0 9.2"/>',
     stop: '<rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor" stroke="none"/>',
     check: '<path d="m4.5 10.5 3.5 3.5 7.5-8"/>',
+    metro: '<path d="M7.5 3.5h5l3 13h-11z"/><path d="M10 13 14 5.5"/>',
     retry: '<path d="M4.5 10a5.5 5.5 0 1 0 1.7-4"/><path d="M4.5 3.5v3h3"/>',
     clock: '<circle cx="10" cy="11" r="6.5"/><path d="M10 7.5V11l2.5 1.5"/><path d="M8 2.5h4"/>',
     plus: '<path d="M10 4.5v11M4.5 10h11"/>',
@@ -383,6 +384,21 @@
       } catch (e) { /* audio refused */ }
     },
     click() { this.tone(1900, 0.025, 'triangle', 0.035); },
+    // A metronome beat at an exact audio time (accent = first beat of a 5-key "word").
+    beat(at, accent) {
+      const ctx = this.ensure();
+      if (!ctx) return;
+      try {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square'; o.frequency.value = accent ? 1560 : 1040;
+        const vol = accent ? 0.09 : 0.05;
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(vol, at + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + 0.03);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(at); o.stop(at + 0.05);
+      } catch (e) { /* audio refused */ }
+    },
     error() { this.tone(170, 0.12, 'sine', 0.12); }
   };
 

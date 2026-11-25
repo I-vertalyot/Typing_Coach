@@ -671,3 +671,13 @@ h2, h3, .lr-title { font-weight: 800; }
 .timer-btn .ico svg { width: 16px; height: 16px; display: block; }
 .timer-btn.not-here { opacity: .55; text-decoration: line-through; text-decoration-thickness: 1.5px; }
 @media (max-width: 720px) { .timer-wrap { margin-left: auto; } }
+/* metronome */
+.metro-slot { display: inline-flex; align-items: center; gap: 8px; }
+.metro-btn { gap: 6px; }
+.metro-btn .ico svg, .timer-btn .ico svg { width: 16px; height: 16px; display: block; }
+.metro-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); flex: none; }
+.metro-dot.on { animation: metro-pulse .18s ease-out; }
+.metro-dot.on.acc { animation-name: metro-pulse-acc; }
+@keyframes metro-pulse { from { background: var(--mark); transform: scale(1.25); } to { background: var(--rule); transform: scale(1); } }
+@keyframes metro-pulse-acc { from { background: var(--mark); transform: scale(1.7); } to { background: var(--rule); transform: scale(1); } }
+#menu-pop-metro { white-space: nowrap; max-height: min(60vh, 420px); overflow-y: auto; }
