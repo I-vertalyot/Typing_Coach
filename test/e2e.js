@@ -644,6 +644,35 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await ctx.close();
   }
 
+  console.log('\n18. Global timer in the top bar');
+  {
+    const { ctx, page } = await newDevice(browser, { mock: false });
+    await page.goto(FILE + '#progress'); await page.waitForSelector('.timer-btn');
+    ok((await page.textContent('.timer-btn')).includes('Off'), 'timer starts off');
+    await page.click('.timer-btn'); await page.click('#menu-pop-timer .len-opt >> text=2 min');
+    ok((await page.textContent('.timer-btn')).includes('2 min'), 'timer can be set from any page');
+    await page.goto(FILE + '#practice'); await page.waitForSelector('.drills-head .len-btn');
+    ok((await page.textContent('.drills-head .len-btn')).includes('2 min'), 'Practice shows the same timer');
+    await page.click('.drill:has-text("Common English words") > button'); await page.waitForSelector('.tt-inner');
+    ok((await page.textContent('.stat >> nth=2')).startsWith('2:00'), 'drill uses the timer');
+    ok(!(await page.$('.timer-btn.not-here')), 'timer is active in a drill');
+    await page.keyboard.type('xx');
+    await page.click('.timer-btn'); await page.click('#menu-pop-timer .len-opt >> text=5 min');
+    await page.waitForFunction(() => (document.querySelectorAll('.stat strong')[2] || {}).textContent === '5:00');
+    ok(await page.$('.tt-inner'), 'changing the timer in a drill restarts it with the new time');
+    await page.goto(FILE + '#lesson-3'); await page.waitForSelector('.lesson-grid');
+    await page.click('.lesson-side .btn.primary'); await page.waitForSelector('.tt-inner');
+    ok(await page.$('.timer-btn.not-here'), 'timer is marked as not used in a lesson exercise');
+    ok(!(await page.textContent('.stat >> nth=2')).startsWith('5'), 'lesson exercise is not timed');
+    const first = await page.$eval('.tt-inner .ch', e => e.textContent);
+    await page.keyboard.type(first);
+    await page.click('.timer-btn'); await page.click('#menu-pop-timer .len-opt >> text=1 min');
+    ok((await page.$$eval('.ch.done', e => e.length)) >= 1 && await page.$('.tt-inner'), 'changing the timer does not interrupt a fixed exercise');
+    ok((await page.textContent('.timer-btn')).includes('1 min'), 'new timer is saved');
+    ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(fails ? `\n${fails} FAILED` : '\nALL E2E CHECKS PASSED');
   process.exit(fails ? 1 : 0);

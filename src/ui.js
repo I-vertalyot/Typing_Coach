@@ -48,6 +48,7 @@
     stop: '<rect x="5.5" y="5.5" width="9" height="9" rx="1.5" fill="currentColor" stroke="none"/>',
     check: '<path d="m4.5 10.5 3.5 3.5 7.5-8"/>',
     retry: '<path d="M4.5 10a5.5 5.5 0 1 0 1.7-4"/><path d="M4.5 3.5v3h3"/>',
+    clock: '<circle cx="10" cy="11" r="6.5"/><path d="M10 7.5V11l2.5 1.5"/><path d="M8 2.5h4"/>',
     plus: '<path d="M10 4.5v11M4.5 10h11"/>',
     edit: '<path d="M4 16h3l8.5-8.5-3-3L4 13z"/>',
     trash: '<path d="M5 6h10M8 6V4.5h4V6M6.5 6l.7 9.5h5.6l.7-9.5"/>',

@@ -664,3 +664,10 @@ h2, h3, .lr-title { font-weight: 800; }
 #static-lessons { margin-top: 34px; scroll-margin-top: 80px; }
 .lib-lede { margin: -4px 0 6px; }
 .lib-group h3 { margin: 18px 0 8px; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); }
+/* global timer in the top bar */
+.timer-wrap { flex: none; margin-left: auto; }
+.timer-wrap + .sync-wrap { margin-left: 0; }
+.timer-btn { gap: 6px; }
+.timer-btn .ico svg { width: 16px; height: 16px; display: block; }
+.timer-btn.not-here { opacity: .55; text-decoration: line-through; text-decoration-thickness: 1.5px; }
+@media (max-width: 720px) { .timer-wrap { margin-left: auto; } }

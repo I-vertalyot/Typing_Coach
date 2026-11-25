@@ -418,11 +418,13 @@
         h('a', { class: 'brand', href: '#learn', 'aria-label': 'Typing Coach, home' },
           h('span', { class: 'kc brand-kc', 'aria-hidden': 'true' }, 'T'), h('span', { class: 'brand-w', 'aria-hidden': 'true' }, 'yping Coach')),
         nav,
+        h('div', { class: 'timer-wrap', id: 'timer-wrap' }),
         h('div', { class: 'sync-wrap' },
           h('button', { class: 'sync', id: 'sync-btn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'sync-pop', onclick: toggleSyncPop }),
           h('div', { class: 'sync-pop', id: 'sync-pop', hidden: true }))));
     app.append(header, h('main', { id: 'view', class: 'view', tabindex: '-1' }));
     renderSyncChip();
+    renderTimerChip();
   }
   function setActiveNav(id) {
     document.querySelectorAll('.nav-link').forEach(a => {
@@ -495,6 +497,7 @@
     const r = route();
     App.view = r.view;
     App.keyHandler = null;
+    renderTimerChip();
     setActiveNav(r.view === 'lesson' || r.view === 'coach' ? 'learn' : r.view === 'steno' || r.view === 'keys' ? 'practice' : r.view);
     App.keyUpHandler = null;
     const view = document.getElementById('view');
@@ -781,6 +784,7 @@
       view.textContent = '';
       view.className = 'view view-typing';
       buildTyping(view, sess);
+      renderTimerChip();
       window.scrollTo(0, 0);
     },
     stop() {
@@ -1217,7 +1221,7 @@
     const L = STENO_LESSONS[li];
     const view = document.getElementById('view');
     if (Typing.active) Typing.stop();
-    App.view = 'steno-drill';
+    App.view = 'steno-drill'; renderTimerChip();
     view.textContent = '';
     view.className = 'view view-steno';
     // 16 prompts: every item once, then random repeats.
@@ -1857,7 +1861,7 @@
 
 
   // Practice length: 0 = 18 words, otherwise seconds. Timed drills get enough words for 90 WPM.
-  const DRILL_TIMES = [[0, '18 words'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
+  const DRILL_TIMES = [[0, 'Off'], [60, '1 min'], [120, '2 min'], [180, '3 min'], [300, '5 min'], [600, '10 min']];
   // A button that opens a small menu of choices (used for practice length and word count).
   function menuButton({ id, label, options, value, onPick, align }) {
     const curLabel = (options.find(o => o[0] === value) || options[0])[1];
@@ -1883,6 +1887,7 @@
     function outside(e) { if (!wrapEl.contains(e.target)) close(); }
     btn.addEventListener('click', () => (pop.hidden ? open() : close()));
     pop.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // keys in the menu never reach the typing exercise (Esc would leave it)
       const i = opts.indexOf(document.activeElement);
       if (e.key === 'Escape') { e.preventDefault(); close(true); }
       else if (e.key === 'ArrowDown') { e.preventDefault(); opts[(i + 1) % opts.length].focus(); }
@@ -1893,7 +1898,34 @@
   }
   const setSetting = (k, v) => { App.state.settings[k] = v; App.state.settingsAt = Date.now(); saveState(); render(); };
   function lengthPicker(align) {
-    return menuButton({ id: 'length-' + (align || 'right'), label: 'Length', options: DRILL_TIMES, value: Number(App.state.settings.drillTime) || 0, align, onPick: v => setSetting('drillTime', v) });
+    return menuButton({ id: 'length-' + (align || 'right'), label: 'Timer', options: DRILL_TIMES, value: Number(App.state.settings.drillTime) || 0, align, onPick: pickTimer });
+  }
+  // The global timer: one setting for every drill with generated words. Exercises with a fixed
+  // text (Learn lessons, static lessons, your texts, steno) keep their own length.
+  const timerOn = () => !!(Typing.active && Typing.sess && Typing.sess.drillKind);
+  const fixedHere = () => (Typing.active && !timerOn()) || App.view === 'steno-drill';
+  function renderTimerChip() {
+    const w = document.getElementById('timer-wrap');
+    if (!w) return;
+    w.textContent = '';
+    const m = menuButton({ id: 'timer', label: 'Timer', options: DRILL_TIMES, value: Number(App.state.settings.drillTime) || 0, onPick: pickTimer });
+    const btn = m.querySelector('.len-btn');
+    btn.classList.add('timer-btn');
+    btn.firstChild.textContent = '';
+    btn.prepend(icon('clock'));
+    btn.setAttribute('aria-label', 'Timer for drills: ' + btn.querySelector('strong').textContent + (fixedHere() ? '. This exercise has a fixed length, so the timer does not apply here.' : ''));
+    if (fixedHere()) { btn.classList.add('not-here'); btn.title = 'This exercise has a fixed length. The timer applies to Quick drills.'; }
+    else btn.title = 'Timer for Quick drills';
+    w.append(m);
+  }
+  function pickTimer(v) {
+    const S = App.state;
+    S.settings.drillTime = v; S.settingsAt = Date.now(); saveState();
+    const label = DRILL_TIMES.find(d => d[0] === v)[1];
+    if (timerOn()) { startDrill(Typing.sess.drillKind); TT.toast('Timer: ' + label + '. The drill starts again.'); return; }
+    if (fixedHere()) { renderTimerChip(); TT.toast('Timer: ' + label + '. This exercise has a fixed length, so the timer starts with your next drill.'); return; }
+    render();
+    TT.toast('Timer: ' + label + '.');
   }
   const COMMON_COUNTS = [50, 100, 200, 500, 1000];
   const commonCount = () => COMMON_COUNTS.includes(Number(App.state.settings.commonCount)) ? Number(App.state.settings.commonCount) : 200;
@@ -1940,7 +1972,7 @@
     }
     if (!text) { TT.toast('Not enough words yet. Do a few lessons first.'); return; }
     Typing.start({
-      kind: 'drill', title, extra: kind === 'weakwords' ? { label: 'Reset weak words', act: resetWordStats } : null, sub: secs ? DRILL_TIMES.find(d => d[0] === secs)[1] + ' practice' : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
+      kind: 'drill', drillKind: kind, title, extra: kind === 'weakwords' ? { label: 'Reset weak words', act: resetWordStats } : null, sub: secs ? 'Timer ' + DRILL_TIMES.find(d => d[0] === secs)[1] : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
         recordSession('drill', kind, title, st);
