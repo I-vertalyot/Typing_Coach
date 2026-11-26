@@ -219,6 +219,7 @@
       wordsByDev: {},    // dev → { "w_word": [typed without mistake, typed with a mistake] }
       wordsResetAt: 0,
       wordDays: {},      // "w_word" → days ('YYYY-MM-DD') when the word was typed right 7 times in a row
+      wordLogByDev: {},  // dev → { "w_word": [last 10 results 'o'/'x', last time, days with a mistake 'YYYY-MM-DD,…'] }
       learnedWords: {},  // "w_word" → time it became a strong learned word
       weakMarked: {},    // "w_word" → time it became a weak word (it stays weak until learned)
       libDoneByDev: {}   // dev → { "l_<lesson id>": times the Library lesson was finished }
@@ -237,7 +238,7 @@
 
     // A reset on any device wins over older progress everywhere.
     const rs = Math.max(L.resetAt || 0, R.resetAt || 0);
-    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordDays: {}, learnedWords: {}, weakMarked: {}, libDoneByDev: {}, textProg: {}, resetAt: rs });
+    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordLogByDev: {}, wordDays: {}, learnedWords: {}, weakMarked: {}, libDoneByDev: {}, textProg: {}, resetAt: rs });
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
@@ -247,8 +248,8 @@
     if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
     S.keysResetAt = ks;
     const ws = Math.max(L.wordsResetAt || 0, R.wordsResetAt || 0);
-    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsLocal = true; }
-    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsRemote = true; }
+    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsLocal = true; }
+    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsRemote = true; }
     S.wordsResetAt = ws;
 
     // settings: newest wins
@@ -291,7 +292,7 @@
     S.history = Array.from(seen.values()).sort((a, b) => a.t - b.t).slice(-HISTORY_CAP);
 
     // per-device counters: my device from local, other devices from remote (local copy if remote lacks it)
-    ['keysByDev', 'dailyByDev', 'wordsByDev', 'libDoneByDev'].forEach(field => {
+    ['keysByDev', 'dailyByDev', 'wordsByDev', 'wordLogByDev', 'libDoneByDev'].forEach(field => {
       const out = {};
       const devs = new Set(Object.keys(L[field] || {}).concat(Object.keys(R[field] || {})));
       devs.forEach(dev => {

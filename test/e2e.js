@@ -422,35 +422,71 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
   console.log('\n11. Weak words');
   {
     const { ctx, page } = await newDevice(browser, { mock: false });
-    const typeWithSlip = async (word) => {
+    await page.clock.install({ time: new Date('2026-11-16T10:00:00') });
+    const old = new Date('2026-11-10T10:00:00').getTime();
+    // slip = a wrong key before the 3rd letter of each word in the list
+    const typeWithSlips = async (words) => {
       const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-      for (let i = 0; i < text.length; i++) { if (word && i === text.indexOf(word) + 2) await page.keyboard.type('q'); await page.keyboard.type(text[i]); }
+      const at = new Set(words.map(w => text.indexOf(w) + 2));
+      for (let i = 0; i < text.length; i++) { if (at.has(i)) await page.keyboard.type(text[i] === 'q' ? 'w' : 'q'); await page.keyboard.type(text[i]); }
       await page.waitForSelector('.result:not([hidden])');
     };
     const card = async () => (await page.textContent('.drill:has-text("Your weak words")')).replace(/\s+/g, ' ');
+    const toPractice = async () => { await page.evaluate(() => { location.hash = '#learn'; }); await page.evaluate(() => { location.hash = '#practice'; }); await page.waitForSelector('.drills'); };
     await openTeacherText(page);
-    await typeWithSlip('teacher');
-    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
-    ok((await card()).includes('A word becomes weak when'), 'one mistake does not make a weak word: ' + await card());
-    // earlier practice: teacher 3 right / 1 wrong (+ the slip above), missed 2 right / 3 wrong, short 6 right / 1 wrong
-    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1')); s.wordsByDev.seed = { w_teacher: [3, 0], w_missed: [1, 3], w_short: [5, 1] }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
+    await typeWithSlips(['teacher', 'teacher']);
+    await toPractice();
+    ok((await card()).includes('A word (3 letters or more) becomes weak'), 'mistakes on one day only do not make a weak word: ' + await card());
+    // earlier practice on other days (another device): see the seed below
+    await page.evaluate((old) => {
+      const s = JSON.parse(localStorage.getItem('tt.state.v1'));
+      s.wordLogByDev = Object.assign(s.wordLogByDev || {}, { seed: {
+        w_teacher: ['ooxo', old, '2026-11-10'],          // 1 mistake on another day + today's → weak (A, B)
+        w_missed: ['oooooooooo', old, '2026-11-01'],      // 10 right lately: an old mistake is forgotten (B)
+        w_to: ['xxooo', old, '2026-11-09,2026-11-10'],     // 2 letters → never weak (D)
+        w_email: ['xoo', old, '2026-11-10']               // today's slip is on a weak key → not counted (C)
+      } });
+      s.wordsByDev = Object.assign(s.wordsByDev || {}, { seed: { w_missed: [1, 9] } }); // many old mistakes in the totals
+      s.keysByDev = Object.assign(s.keysByDev || {}, { seed: { a: [20, 10] } });     // A is a weak key
+      localStorage.setItem('tt.state.v1', JSON.stringify(s));
+    }, old);
     await page.reload(); await page.waitForSelector('.drills');
     await openTeacherText(page);
-    await typeWithSlip('teacher');
-    await page.click('.ty-head .back'); await page.goto(FILE + '#practice'); await page.waitForSelector('.drills');
+    await typeWithSlips(['teacher', 'missed', 'short', ' to ', 'email']);
+    await toPractice();
     const c = await card();
-    ok(c.includes('teacher') && c.includes('missed') && !c.includes('short'), 'repeated mistakes make weak words (teacher 2 of 5, missed 3 of 5), one slip does not (short): ' + c);
+    const listed = await page.$$eval('.drill:has-text("Your weak words") .ww', e => e.map(x => x.firstChild.textContent.trim()));
+    ok(c.includes('teacher'), 'mistakes on 2 days make a weak word (A): ' + c);
+    ok(!c.includes('missed'), 'only the last 10 times count, old mistakes fade (B)');
+    ok(!c.includes('email'), 'a slip on a weak key does not count for the word (C)');
+    ok(!listed.includes('to'), 'words shorter than 3 letters are never weak (D): ' + listed.join(' '));
+    ok(!listed.includes('short'), 'one slip is not enough');
+    await page.click('.drill:has-text("Your weak words") .ww-add');
+    await page.fill('#ww-input', 'because');
+    await page.click('.dialog .btn.primary');
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
-    const d = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
-    ok(d.split(' ').every(w => w === 'teacher' || w === 'missed') && d.split(' ').filter(w => w === 'teacher').length === 7, 'drill practices only those words, 7 times each: ' + d);
+    const d = (await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''))).split(' ');
+    ok(d.filter(w => w === 'teacher').length === 7 && d.filter(w => w === 'because').length === 7, 'drill has every weak word 7 times');
+    const others = d.filter(w => w !== 'teacher' && w !== 'because');
+    ok(others.length === 4 && others.every(w => /^[a-z]+$/.test(w) && w !== 'teacher' && w !== 'because'), 'drill mixes in common words like real text (H): ' + d.join(' '));
+    ok(d.every((w, i) => i === 0 || w !== d[i - 1]), 'the same word never comes twice in a row');
     ok(await page.isVisible('.ty-note >> text=Reset weak words'), 'weak words drill has its own reset button');
     await typeExercise(page);
-    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
-    ok((await card()).includes('teacher 1/5'), 'a perfect drill counts as day 1 of 5, the word stays weak');
+    await toPractice();
+    ok((await card()).includes('teacher 1/5'), 'a perfect drill counts as good day 1 of 5, the word stays weak');
+    ok(await page.$('.ww.today'), 'words done today are marked');
+    // G: words not done today come first
+    await page.click('.drill:has-text("Your weak words") .ww-add');
+    await page.fill('#ww-input', 'world, light, water, music, river, sugar');
+    await page.click('.dialog .btn.primary');
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    const d3 = (await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''))).split(' ');
+    ok(!d3.includes('teacher') && !d3.includes('because') && d3.filter(w => w === 'sugar').length === 7, 'words not done today come first (G): ' + d3.join(' '));
     await page.click('.ty-note >> text=Reset weak words');
     await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
-    ok((await card()).includes('A word becomes weak when'), 'reset clears the weak words');
+    ok((await card()).includes('A word (3 letters or more) becomes weak'), 'reset clears the weak words');
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    ok(Object.keys(st.wordLogByDev).length === 0, 'reset clears the word log');
     ok(page.errors.length === 0, 'no page errors: ' + page.errors.join(' | '));
     await ctx.close();
   }
@@ -461,7 +497,7 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.clock.install({ time: new Date('2026-11-16T10:00:00') });
     const toPractice = async () => { await page.evaluate(() => { location.hash = '#learn'; }); await page.evaluate(() => { location.hash = '#practice'; }); await page.waitForSelector('.drills'); };
     await page.goto(FILE + '#learn'); await page.waitForSelector('.lessons');
-    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1') || '{}'); s.wordsByDev = { seed: { w_teacher: [3, 1] } }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('tt.state.v1') || '{}'); s.wordLogByDev = { seed: { w_teacher: ['oxoo', 1, '2026-11-10'] } }; localStorage.setItem('tt.state.v1', JSON.stringify(s)); });
     await page.reload(); await page.waitForSelector('.lessons');
     await openTeacherText(page);
     const text = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
@@ -478,10 +514,10 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
         await toPractice();
         if (day === 2) ok((await page.textContent('.drill:has-text("Your weak words")')).includes('teacher 2/5'), 'card shows 2 of 5 days');
       }
-      await page.clock.fastForward('24:00:00');
+      await page.clock.fastForward(day === 2 ? '48:00:00' : '24:00:00'); // a day off does not break it (E)
     }
     await toPractice();
-    ok(!(await page.textContent('.drill:has-text("Your weak words")')).includes('teacher'), 'the word left the weak words');
+    ok(!(await page.textContent('.drill:has-text("Your weak words")')).includes('teacher'), '5 good days within 14 days, with a day off, make the word strong (E)');
     ok((await page.textContent('.drill:has-text("Strong learned words")')).includes('teacher'), 'the word is in Strong learned words');
     // add words by hand; a strong word added again becomes weak again
     await page.click('.drill:has-text("Your weak words") .ww-add');

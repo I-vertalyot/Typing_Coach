@@ -681,3 +681,5 @@ h2, h3, .lr-title { font-weight: 800; }
 @keyframes metro-pulse { from { background: var(--mark); transform: scale(1.25); } to { background: var(--rule); transform: scale(1); } }
 @keyframes metro-pulse-acc { from { background: var(--mark); transform: scale(1.7); } to { background: var(--rule); transform: scale(1); } }
 #menu-pop-metro { white-space: nowrap; max-height: min(60vh, 420px); overflow-y: auto; }
+.ww.today { opacity: .6; }
+.ww.today::after { content: " ✓"; }

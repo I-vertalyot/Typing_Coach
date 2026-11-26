@@ -752,20 +752,30 @@
     // Words: count every typing (right / with a mistake). Mark words that meet the weak-word rule.
     if (st.words) {
       const WB = S.wordsByDev[App.dev] = S.wordsByDev[App.dev] || {};
+      const LG = S.wordLogByDev = S.wordLogByDev || {};
+      const WL = LG[App.dev] = LG[App.dev] || {};
       const runs = {};
       Object.keys(st.words).forEach(w => {
         const f = 'w_' + w.replace(/'/g, '');
         if (!f.match(/^w_[a-z]+$/)) return;
-        const [okN, badN, , bestRun] = st.words[w];
+        const [okN, badN, , bestRun, log] = st.words[w];
         WB[f] = WB[f] || [0, 0]; WB[f][0] += okN; WB[f][1] += badN;
         runs[f] = Math.max(runs[f] || 0, bestRun);
+        if (log) {
+          const prev = WL[f] || ['', 0, ''];
+          let badDays = prev[2] ? prev[2].split(',') : [];
+          if (log.includes('x') && !badDays.includes(day)) badDays = badDays.concat([day]).slice(-5);
+          WL[f] = [(prev[0] + log).slice(-WORD_LOG), now, badDays.join(',')];
+        }
       });
+      Object.keys(WL).length > 800 && Object.keys(WL).sort((a, b) => WL[a][1] - WL[b][1]).slice(0, Object.keys(WL).length - 800).forEach(k => delete WL[k]);
       // keep at most 800 words per device: drop words without mistakes first, then the least typed
       const keys = Object.keys(WB);
       if (keys.length > 800) keys.sort((a, b) => (WB[a][1] - WB[b][1]) || ((WB[a][0] + WB[a][1]) - (WB[b][0] + WB[b][1]))).slice(0, keys.length - 800).forEach(k => delete WB[k]);
       const tot = TT.sumByDevice(S.wordsByDev);
+      void tot;
       Object.keys(runs).forEach(f => {
-        if (tot[f] && isWeakByRule(tot[f]) && !S.learnedWords[f] && !S.weakMarked[f]) S.weakMarked[f] = Date.now();
+        if (!S.weakMarked[f] && !S.learnedWords[f] && isWeakByRule(f)) S.weakMarked[f] = Date.now();
         if (runs[f] >= LEARN_RUN) markWordDay(f);
       });
     }
@@ -1034,6 +1044,8 @@
       const ms = limit ? Math.max(ms0, 1000) : Math.max(active, 1000);
       // Which words were typed with a mistake (letters only, lowercase).
       const words = {};
+      // (rule C) a mistake on one of your weak keys does not make the word look weak: the key is the problem
+      const weakSet = new Set(); weakKeys(6).forEach(k => { weakSet.add(k.c); weakSet.add(k.c.toLowerCase()); });
       const re = /[A-Za-z']+/g;
       let m;
       while ((m = re.exec(text))) {
@@ -1041,12 +1053,13 @@
         if (b > pos) break;
         const w = m[0].toLowerCase().replace(/^'+|'+$/g, '');
         if (w.length < 2 || !/^[a-z']+$/.test(w)) continue;
-        let bad = false;
-        for (let i = a; i < b; i++) if (missAt.has(i)) { bad = true; break; }
-        const e = words[w] = words[w] || [0, 0, 0, 0]; // ok, bad, current run, best run
+        let bad = false, counted = false;
+        for (let i = a; i < b; i++) if (missAt.has(i)) { bad = true; if (!weakSet.has(chars[i])) counted = true; }
+        const e = words[w] = words[w] || [0, 0, 0, 0, '']; // ok, bad, current run, best run, log ('o' right, 'x' mistake)
         e[bad ? 1 : 0]++;
         e[2] = bad ? 0 : e[2] + 1;
         e[3] = Math.max(e[3], e[2]);
+        if (!bad) e[4] += 'o'; else if (counted) e[4] += 'x'; // a slip only on a weak key is not logged
       }
       const st = { wpm: TT.wpm(correctCount(), ms), acc: strokes ? (strokes - errors) / strokes * 100 : 100, ms, chars: limit ? pos : chars.length, hits, misses, errors, strokes, timeUp: !!timeUp, words };
       const stars = TT.stars(st.acc, st.wpm, sess.target || 20);
@@ -1058,7 +1071,7 @@
     function showResult(st, stars, out) {
       result.textContent = '';
       const titles = ['Almost! You need 90% accuracy for a star.', 'Good. Now aim for more accuracy.', 'Well done!', 'Excellent!'];
-      if (App.newlyLearned && App.newlyLearned.length) { out.message = 'New strong words: ' + App.newlyLearned.join(', ') + '. You typed them right on ' + LEARN_DAYS + ' days in a row!'; App.newlyLearned = []; }
+      if (App.newlyLearned && App.newlyLearned.length) { out.message = 'New strong words: ' + App.newlyLearned.join(', ') + '. You typed them right on ' + LEARN_DAYS + ' different days!'; App.newlyLearned = []; }
       if (st.timeUp) out.message = 'Time is up! You typed ' + Math.round(correctCount() / 5) + ' words in ' + fmtClock(st.ms) + '.';
       const missList = Object.keys(misses).sort((a, b) => misses[b] - misses[a]).slice(0, 6);
       const primary = out.primary || { label: 'Again', act: restart };
@@ -1627,9 +1640,9 @@
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
       (() => { const ww = weakWords(8); return drillCard('Your weak words',
-        ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww', title: x.streak + ' of ' + LEARN_DAYS + ' days' }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null))),
-          h('span', { class: 'small muted' }, 'Type a word right ' + LEARN_RUN + ' times in a row, on ' + LEARN_DAYS + ' days in a row, and it moves to your strong words.'))
-          : h('span', { class: 'muted small' }, 'A word becomes weak when you typed it at least 5 times, 2 or more times with a mistake, and 90% or less right. You can also add words yourself.'),
+        ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' + (doneToday('w_' + x.w) ? ' today' : ''), title: x.streak + ' of ' + LEARN_DAYS + ' good days' + (doneToday('w_' + x.w) ? ', done today' : '') }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null))),
+          h('span', { class: 'small muted' }, 'Type a word right ' + LEARN_RUN + ' times in a row in one exercise, on ' + LEARN_DAYS + ' different days within ' + LEARN_WINDOW + ' days, and it moves to your strong words.'))
+          : h('span', { class: 'muted small' }, 'A word (3 letters or more) becomes weak when 2 or more of the last 10 times you typed it had a mistake, on 2 different days. Slips on your weak keys don’t count. You can also add words yourself.'),
         ww.length ? () => startDrill('weakwords') : null,
         h('span', { class: 'cta-row' },
           h('button', { class: 'btn ghost small ww-add', type: 'button', onclick: addWeakWords }, icon('plus'), 'Add words'),
@@ -1696,16 +1709,15 @@
   }
   // A weak word becomes a strong learned word after 5 days in a row on which it was typed
   // correctly 7 times in a row in one exercise.
-  const LEARN_DAYS = 5, LEARN_RUN = 7;
+  const LEARN_DAYS = 5, LEARN_RUN = 7, LEARN_WINDOW = 14, WORD_LOG = 10;
+  // (rule E) Good days: different days in the last LEARN_WINDOW days (they need not be in a row),
+  // counted only since the word was (last) marked weak.
   function wordStreak(f, now) {
-    // only days since the word was (last) marked weak count
-    const since = TT.dayKey((App.state.weakMarked || {})[f] || 0);
-    const days = new Set(((App.state.wordDays || {})[f] || []).filter(d => d >= since));
-    let n = 0, t = now || Date.now();
-    if (!days.has(TT.dayKey(t))) t -= 86400000; // today not done yet: the streak can still continue
-    while (days.has(TT.dayKey(t)) && n < 30) { n++; t -= 86400000; }
-    return n;
+    const t = now || Date.now();
+    const since = TT.dayKey(Math.max((App.state.weakMarked || {})[f] || 0, t - (LEARN_WINDOW - 1) * 86400000));
+    return new Set(((App.state.wordDays || {})[f] || []).filter(d => d >= since)).size;
   }
+  const doneToday = (f) => ((App.state.wordDays || {})[f] || []).includes(TT.dayKey(Date.now()));
   // A word is learned when it was learned after it was (last) marked weak. Adding a learned word again makes it weak again.
   function isLearned(f) {
     const S = App.state, L = (S.learnedWords || {})[f];
@@ -1750,12 +1762,22 @@
     }
   }
   // Words the learner mistyped and has not learned yet: [{w, ok, bad, score, streak}]
-  // Weak-word rule (like weak keys, one slip is not enough): typed at least 5 times,
-  // at least 2 of them with a mistake, and at most 90% right.
-  const WEAK_MIN_TYPED = 5, WEAK_MIN_BAD = 2, WEAK_MAX_ACC = 0.9;
-  function isWeakByRule(c) {
-    const ok = c[0] || 0, bad = c[1] || 0, n = ok + bad;
-    return n >= WEAK_MIN_TYPED && bad >= WEAK_MIN_BAD && ok / n <= WEAK_MAX_ACC;
+  // Weak-word rule (one bad exercise is not enough):
+  //  D  the word has at least 3 letters,
+  //  B  of the last 10 times you typed it (all devices), at least 5 are known and 2 or more had a mistake,
+  //  A  those mistakes were on at least 2 different days.
+  // Mistakes only on one of your weak keys are not logged (rule C, in the typing engine).
+  const WEAK_MIN_LEN = 3, WEAK_MIN_TYPED = 5, WEAK_MIN_BAD = 2, WEAK_MIN_DAYS = 2;
+  function wordLog(f) {
+    const entries = Object.values(App.state.wordLogByDev || {}).map(m => (m || {})[f]).filter(Boolean).sort((a, b) => a[1] - b[1]);
+    const recent = entries.map(e => e[0]).join('').slice(-WORD_LOG);
+    const days = new Set(); entries.forEach(e => (e[2] || '').split(',').filter(Boolean).forEach(d => days.add(d)));
+    return { recent, bad: (recent.match(/x/g) || []).length, days: days.size };
+  }
+  function isWeakByRule(f) {
+    if (f.length - 2 < WEAK_MIN_LEN) return false;
+    const L = wordLog(f);
+    return L.recent.length >= WEAK_MIN_TYPED && L.bad >= WEAK_MIN_BAD && L.days >= WEAK_MIN_DAYS;
   }
   // Weak words stay weak until they are learned. Score like weak keys: (mistakes + 0.5) / (typed + 2).
   function weakWords(n) {
@@ -1769,23 +1791,35 @@
   const learnedList = () => Object.keys(App.state.learnedWords || {}).filter(isLearned).sort((a, b) => App.state.learnedWords[b] - App.state.learnedWords[a]).map(k => k.slice(2));
   // Untimed: the 6 weakest words, 7 times each, so one drill can count as a good day.
   // Timed: the same words, mixed, as long as the time lasts.
+  // (rule G) Which words: first the ones not done today, then the ones closest to strong, then the weakest.
+  function drillWords(n) {
+    return weakWords(999).map(x => Object.assign(x, { today: doneToday('w_' + x.w) }))
+      .sort((a, b) => (a.today - b.today) || (b.streak - a.streak) || (b.score - a.score)).slice(0, n);
+  }
   function weakWordsDrill(count, timed) {
-    const weak = weakWords(6);
+    const weak = drillWords(6);
     if (!weak.length) return '';
     const pool = [];
     if (!timed) weak.forEach(x => { for (let i = 0; i < LEARN_RUN; i++) pool.push(x.w); });
     else for (let i = 0; i < count; i++) pool.push(weak[i % weak.length].w);
+    // (rule H) mixed like real text: after every 3 weak words comes one common word with keys you know
+    const known = knownChars(), weakSet = new Set(weak.map(x => x.w));
+    const fill = TT.COMMON.slice(0, 200).filter(w => w.length > 1 && !weakSet.has(w) && [...w].every(c => known.has(c)));
+    const fillers = fill.length ? Array.from({ length: Math.floor(pool.length / 3) }, () => fill[Math.floor(Math.random() * fill.length)]) : [];
     // shuffle, then avoid the same word twice in a row where possible
     for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
     for (let i = 1; i < pool.length; i++) {
       if (pool[i] === pool[i - 1]) { const j = pool.findIndex((w, k) => k > i && w !== pool[i] && pool[k - 1] !== w && (pool[k + 1] || '') !== pool[i - 1]); if (j > 0) [pool[i], pool[j]] = [pool[j], pool[i]]; }
     }
-    return pool.join(' ');
+    const out = [];
+    pool.forEach((w, i) => { out.push(w); if (i % 3 === 2 && fillers.length) out.push(fillers.pop()); });
+    return out.join(' ');
   }
   async function resetWordStats() {
     const ok = await TT.dialog({ title: 'Reset weak words?', body: 'The list of words you often mistype is deleted on all your devices. Lessons, stars and history stay.', ok: 'Reset weak words', danger: true });
     if (!ok) return;
     App.state.wordsByDev = {};
+    App.state.wordLogByDev = {};
     App.state.weakMarked = {};
     App.state.wordDays = {};
     App.state.wordsResetAt = Date.now();
