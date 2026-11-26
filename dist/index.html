@@ -4180,7 +4180,9 @@ h2, h3, .lr-title { font-weight: 800; }
       kind: 'drill', drillKind: kind, title, extra: kind === 'weakwords' ? { label: 'Reset weak words', act: resetWordStats } : null, sub: secs ? 'Timer ' + DRILL_TIMES.find(d => d[0] === secs)[1] : kind === 'left' || kind === 'right' ? 'Only ' + (kind === 'left' ? 'left' : 'right') + '-hand words' : 'Random words', text, lang: 'en', target: targetFor(20), timeLimit: secs,
       back: { label: 'Practice', href: '#practice' },
       complete(st, stars) {
-        recordSession('drill', kind, title, st);
+        // One-hand drills use odd words (only one side of the keyboard), so they never count for weak words.
+        const oneHand = kind === 'left' || kind === 'right';
+        recordSession('drill', kind, title, oneHand ? Object.assign({}, st, { words: null }) : st);
         return { primary: { label: 'New words', act: () => startDrill(kind) }, secondary: { label: 'Back to Practice', act: () => { location.hash = '#practice'; render(); } } };
       }
     });

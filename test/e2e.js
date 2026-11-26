@@ -280,6 +280,14 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     const leftText = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
     ok(/^[qwertasdfgzxcvb ]+$/.test(leftText) && leftText.length > 20, 'left-hand drill uses only left-hand letters: ' + leftText);
     await shot(page, '14-left-hand');
+    const before = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    await typeExercise(page, { mistakes: 60 });
+    const after = await page.evaluate(() => JSON.parse(localStorage.getItem('tt.state.v1')));
+    const wordsOf = (st) => JSON.stringify(st.wordsByDev || {});
+    ok(wordsOf(after) === wordsOf(before) && Object.keys(after.weakMarked || {}).length === Object.keys(before.weakMarked || {}).length, 'one-hand drill words never count for weak words');
+    ok(after.history.length === before.history.length + 1, 'the one-hand drill is still saved in history');
+    await page.click('.result .btn >> text=Back to Practice'); await page.waitForSelector('.drills');
+    await page.click('.hand-card .btn >> text=Left hand'); await page.waitForSelector('.tt-inner');
     // reset the weak keys
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
     await page.click('.drill >> nth=0 >> text=Reset');
