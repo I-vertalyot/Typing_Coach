@@ -222,6 +222,7 @@
       wordLogByDev: {},  // dev → { "w_word": [last 10 results 'o'/'x', last time, days with a mistake 'YYYY-MM-DD,…'] }
       learnedWords: {},  // "w_word" → time it became a strong learned word
       weakMarked: {},    // "w_word" → time it became a weak word (it stays weak until learned)
+      weakRemoved: {},   // "w_word" → time you removed it from your weak words (newer than weakMarked = not weak)
       libDoneByDev: {}   // dev → { "l_<lesson id>": times the Library lesson was finished }
     };
   };
@@ -238,7 +239,7 @@
 
     // A reset on any device wins over older progress everywhere.
     const rs = Math.max(L.resetAt || 0, R.resetAt || 0);
-    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordLogByDev: {}, wordDays: {}, learnedWords: {}, weakMarked: {}, libDoneByDev: {}, textProg: {}, resetAt: rs });
+    const wipe = (X) => Object.assign({}, X, { lessons: {}, history: (X.history || []).filter(x => x && x.t >= rs), keysByDev: {}, dailyByDev: {}, wordsByDev: {}, wordLogByDev: {}, wordDays: {}, learnedWords: {}, weakMarked: {}, weakRemoved: {}, libDoneByDev: {}, textProg: {}, resetAt: rs });
     if ((L.resetAt || 0) < rs) { L = wipe(L); vsLocal = true; }
     if ((R.resetAt || 0) < rs) { R = wipe(R); vsRemote = true; }
     S.resetAt = rs;
@@ -248,8 +249,8 @@
     if ((R.keysResetAt || 0) < ks) { R = Object.assign({}, R, { keysByDev: {}, keysResetAt: ks }); vsRemote = true; }
     S.keysResetAt = ks;
     const ws = Math.max(L.wordsResetAt || 0, R.wordsResetAt || 0);
-    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsLocal = true; }
-    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, wordsResetAt: ws }); vsRemote = true; }
+    if ((L.wordsResetAt || 0) < ws) { L = Object.assign({}, L, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, weakRemoved: {}, wordsResetAt: ws }); vsLocal = true; }
+    if ((R.wordsResetAt || 0) < ws) { R = Object.assign({}, R, { wordsByDev: {}, wordLogByDev: {}, wordDays: {}, weakMarked: {}, weakRemoved: {}, wordsResetAt: ws }); vsRemote = true; }
     S.wordsResetAt = ws;
 
     // settings: newest wins
@@ -333,6 +334,11 @@
     Object.keys(L.weakMarked || {}).forEach(k => { if (!(k in wm)) vsRemote = true; wm[k] = Math.max(wm[k] || 0, L.weakMarked[k]); });
     Object.keys(R.weakMarked || {}).forEach(k => { if (!((L.weakMarked || {})[k])) vsLocal = true; });
     S.weakMarked = wm;
+    // removed weak words: latest time wins
+    const wr = Object.assign({}, R.weakRemoved || {});
+    Object.keys(L.weakRemoved || {}).forEach(k => { if ((wr[k] || 0) < L.weakRemoved[k]) { vsRemote = true; wr[k] = L.weakRemoved[k]; } });
+    Object.keys(wr).forEach(k => { if (((L.weakRemoved || {})[k] || 0) < wr[k]) vsLocal = true; });
+    S.weakRemoved = wr;
     const lw = Object.assign({}, R.learnedWords || {});
     Object.keys(L.learnedWords || {}).forEach(k => { if (!(k in lw)) vsRemote = true; lw[k] = Math.max(lw[k] || 0, L.learnedWords[k]); });
     Object.keys(R.learnedWords || {}).forEach(k => { if (!((L.learnedWords || {})[k])) vsLocal = true; });

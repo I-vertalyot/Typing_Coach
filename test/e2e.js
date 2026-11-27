@@ -482,6 +482,36 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     const d3 = (await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''))).split(' ');
     ok(!d3.includes('teacher') && !d3.includes('because') && d3.filter(w => w === 'sugar').length === 7, 'words not done today come first (G): ' + d3.join(' '));
+    // remove one word
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    await page.click('.drill:has-text("Your weak words") .ww-add');
+    await page.fill('#ww-input', 'planet');
+    await page.click('.dialog .btn.primary');
+    ok((await card()).includes('Show all 9 words'), 'more than 8 words: a Show all button');
+    await page.click('.ww-more');
+    ok(await page.$$eval('.drill:has-text("Your weak words") .ww', e => e.length) === 9, 'Show all lists every weak word');
+    await page.click('[aria-label="Remove teacher"]');
+    const after = await page.$$eval('.drill:has-text("Your weak words") .ww', e => e.map(x => x.firstChild.textContent.trim()));
+    ok(!after.includes('teacher') && after.length === 8, 'the × button removes a word: ' + after.join(' '));
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    const d4 = await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''));
+    ok(!d4.split(' ').includes('teacher'), 'a removed word is not in the drill');
+    // one more mistake today does not bring it back (it needs mistakes on 2 new days)
+    await openTeacherText(page);
+    await typeWithSlips(['eacher']); // slip on C (A is a weak key now)
+    await toPractice();
+    const showAll = async () => { const m = await page.$('.ww-more'); if (m && (await m.textContent()).includes('Show all')) await m.click(); };
+    await showAll();
+    ok(!(await page.$('[aria-label="Remove teacher"]')), 'a removed word stays out after mistakes on one day');
+    for (let k = 0; k < 2; k++) {
+      await page.clock.fastForward('24:00:00');
+      await openTeacherText(page);
+      await typeWithSlips([['acher', 'cher'][k]]); // a new key each time: slipped keys become weak keys (rule C)
+      await toPractice(); await showAll();
+      if (k === 0) ok(!(await page.$('[aria-label="Remove teacher"]')), 'still out after 1 new day with mistakes');
+    }
+    ok(await page.$('[aria-label="Remove teacher"]'), 'it comes back after mistakes on 2 new days');
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     await page.click('.ty-note >> text=Reset weak words');
     await page.click('.dialog .btn.danger'); await page.waitForSelector('.drills');
     ok((await card()).includes('A word (3 letters or more) becomes weak'), 'reset clears the weak words');

@@ -775,7 +775,7 @@
       const tot = TT.sumByDevice(S.wordsByDev);
       void tot;
       Object.keys(runs).forEach(f => {
-        if (!S.weakMarked[f] && !S.learnedWords[f] && isWeakByRule(f)) S.weakMarked[f] = Date.now();
+        if ((!S.weakMarked[f] || isRemoved(f)) && !S.learnedWords[f] && isWeakByRule(f)) S.weakMarked[f] = Date.now();
         if (runs[f] >= LEARN_RUN) markWordDay(f);
       });
     }
@@ -1639,8 +1639,10 @@
         weak.length ? () => startDrill('weak') : null, hasKeyStats() ? resetKeysButton() : null),
       drillCard('Words with keys you know', h('span', { class: 'muted small' }, learned.size > 40 ? 'All letters' : Array.from(learned).filter(c => c !== ' ').join(' ').toUpperCase()), () => startDrill('known')),
       drillCard('Common English words', h('div', { class: 'common-body' }, h('span', { class: 'muted small' }, 'The ' + commonCount() + ' most common words.'), commonPicker()), () => startDrill('common')),
-      (() => { const ww = weakWords(8); return drillCard('Your weak words',
-        ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' + (doneToday('w_' + x.w) ? ' today' : ''), title: x.streak + ' of ' + LEARN_DAYS + ' good days' + (doneToday('w_' + x.w) ? ', done today' : '') }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null))),
+      (() => { const all = weakWords(999), ww = wwShowAll ? all : all.slice(0, 8); return drillCard('Your weak words',
+        ww.length ? h('div', { class: 'ww-body' }, h('span', { class: 'weak-words' }, ww.map(x => h('span', { class: 'ww' + (doneToday('w_' + x.w) ? ' today' : ''), title: x.streak + ' of ' + LEARN_DAYS + ' good days' + (doneToday('w_' + x.w) ? ', done today' : '') }, x.w, x.streak ? h('span', { class: 'ww-days' }, ' ' + x.streak + '/' + LEARN_DAYS) : null, doneToday('w_' + x.w) ? h('span', { class: 'ww-ok', 'aria-hidden': 'true' }, ' ✓') : null,
+            h('button', { class: 'ww-x', type: 'button', 'aria-label': 'Remove ' + x.w, title: 'Remove ' + x.w, onclick: () => removeWeakWord(x.w) }, '×'))),
+            all.length > 8 ? h('button', { class: 'linklike small ww-more', type: 'button', onclick: () => { wwShowAll = !wwShowAll; render(); } }, wwShowAll ? 'Show fewer' : 'Show all ' + all.length + ' words') : null),
           h('span', { class: 'small muted' }, 'Type a word right ' + LEARN_RUN + ' times in a row in one exercise, on ' + LEARN_DAYS + ' different days within ' + LEARN_WINDOW + ' days, and it moves to your strong words.'))
           : h('span', { class: 'muted small' }, 'A word (3 letters or more) becomes weak when 2 or more of the last 10 times you typed it had a mistake, on 2 different days. Slips on your weak keys don’t count. You can also add words yourself.'),
         ww.length ? () => startDrill('weakwords') : null,
@@ -1719,6 +1721,20 @@
   }
   const doneToday = (f) => ((App.state.wordDays || {})[f] || []).includes(TT.dayKey(Date.now()));
   // A word is learned when it was learned after it was (last) marked weak. Adding a learned word again makes it weak again.
+  // A word you removed stays out until it is marked weak again later (by the rule, or by Add words).
+  function isRemoved(f) {
+    const S = App.state, r = (S.weakRemoved || {})[f];
+    return !!r && r >= ((S.weakMarked || {})[f] || 0);
+  }
+  let wwShowAll = false;
+  function removeWeakWord(w) {
+    const S = App.state;
+    S.weakRemoved = S.weakRemoved || {};
+    S.weakRemoved['w_' + w] = Date.now();
+    saveState();
+    TT.toast('Removed “' + w + '” from Your weak words. It comes back only if you mistype it on 2 more days.');
+    render();
+  }
   function isLearned(f) {
     const S = App.state, L = (S.learnedWords || {})[f];
     return !!L && L >= ((S.weakMarked || {})[f] || 0);
@@ -1738,7 +1754,7 @@
       if (!/^[a-z]+$/.test(w)) { skipped.push(raw); return; }
       seen.add(w);
       const f = 'w_' + w;
-      if ((S.weakMarked || {})[f] && !isLearned(f)) return; // already weak
+      if ((S.weakMarked || {})[f] && !isLearned(f) && !isRemoved(f)) return; // already weak
       S.weakMarked[f] = Date.now();
       added.push(w);
     });
@@ -1751,7 +1767,7 @@
     const S = App.state;
     if (isLearned(f)) return;
     const tot = TT.sumByDevice(S.wordsByDev)[f];
-    if (!S.weakMarked[f]) return; // only weak words
+    if (!S.weakMarked[f] || isRemoved(f)) return; // only weak words
     void tot;
     const day = TT.dayKey(Date.now());
     const list = S.wordDays[f] = (S.wordDays[f] || []).filter(d => d !== day).concat([day]).sort().slice(-10);
@@ -1768,22 +1784,24 @@
   //  A  those mistakes were on at least 2 different days.
   // Mistakes only on one of your weak keys are not logged (rule C, in the typing engine).
   const WEAK_MIN_LEN = 3, WEAK_MIN_TYPED = 5, WEAK_MIN_BAD = 2, WEAK_MIN_DAYS = 2;
-  function wordLog(f) {
+  // `after`: a time you removed the word; then only days with mistakes after that day count.
+  function wordLog(f, after) {
     const entries = Object.values(App.state.wordLogByDev || {}).map(m => (m || {})[f]).filter(Boolean).sort((a, b) => a[1] - b[1]);
     const recent = entries.map(e => e[0]).join('').slice(-WORD_LOG);
-    const days = new Set(); entries.forEach(e => (e[2] || '').split(',').filter(Boolean).forEach(d => days.add(d)));
+    const from = after ? TT.dayKey(after) : '';
+    const days = new Set(); entries.forEach(e => (e[2] || '').split(',').filter(d => d && d > from).forEach(d => days.add(d)));
     return { recent, bad: (recent.match(/x/g) || []).length, days: days.size };
   }
   function isWeakByRule(f) {
     if (f.length - 2 < WEAK_MIN_LEN) return false;
-    const L = wordLog(f);
+    const L = wordLog(f, (App.state.weakRemoved || {})[f]);
     return L.recent.length >= WEAK_MIN_TYPED && L.bad >= WEAK_MIN_BAD && L.days >= WEAK_MIN_DAYS;
   }
   // Weak words stay weak until they are learned. Score like weak keys: (mistakes + 0.5) / (typed + 2).
   function weakWords(n) {
     const S = App.state;
     const tot = TT.sumByDevice(S.wordsByDev);
-    return Object.keys(S.weakMarked || {}).filter(k => !isLearned(k)).map(k => {
+    return Object.keys(S.weakMarked || {}).filter(k => !isLearned(k) && !isRemoved(k)).map(k => {
       const [ok, bad] = tot[k] || [0, 0];
       return { w: k.slice(2), ok, bad, score: (bad + 0.5) / (ok + bad + 2), streak: wordStreak(k) };
     }).sort((a, b) => b.score - a.score || b.bad - a.bad).slice(0, n || 12);
@@ -1821,6 +1839,7 @@
     App.state.wordsByDev = {};
     App.state.wordLogByDev = {};
     App.state.weakMarked = {};
+    App.state.weakRemoved = {};
     App.state.wordDays = {};
     App.state.wordsResetAt = Date.now();
     saveState();
