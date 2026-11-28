@@ -554,8 +554,8 @@
     const intro = h('div', { class: 'learn-intro' },
       h('span', { class: 'riso-letter o', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
       h('span', { class: 'riso-letter g', 'aria-hidden': 'true' }, bigLetter.length === 1 ? bigLetter : '&'),
-      h('h1', { class: 'display' }, name ? 'Hi, ' + name + '. Ready to type?' : 'Ten fingers, clear English.'),
-      h('p', { class: 'lede' }, 'Learn to type without looking. Every lesson also teaches one English point.'));
+      h('h1', { class: 'display' }, name ? 'Hi, ' + name + '. Ready to type?' : 'Ten fingers. Eyes on the screen.'),
+      h('p', { class: 'lede' }, 'Learn to type without looking at the keyboard: a few new keys in every lesson, then build speed and accuracy in Practice.'));
 
     let cont;
     if (ni === -1) {
