@@ -1814,21 +1814,38 @@
     return weakWords(999).map(x => Object.assign(x, { today: doneToday('w_' + x.w) }))
       .sort((a, b) => (a.today - b.today) || (b.streak - a.streak) || (b.score - a.score)).slice(0, n);
   }
+  // Every weak word is in the drill.
+  // Untimed: each word 7 times (so the drill can count as a good day for every word), all mixed.
+  // Timed: rounds that each hold every word once, in a new order every round, for as long as the
+  // time lasts; the first round starts with the words not done today (rule G).
   function weakWordsDrill(count, timed) {
-    const weak = drillWords(6);
+    const weak = drillWords(999);
     if (!weak.length) return '';
-    const pool = [];
-    if (!timed) weak.forEach(x => { for (let i = 0; i < LEARN_RUN; i++) pool.push(x.w); });
-    else for (let i = 0; i < count; i++) pool.push(weak[i % weak.length].w);
+    const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    // avoid the same word twice in a row where possible
+    const spread = (pool) => {
+      for (let i = 1; i < pool.length; i++) {
+        if (pool[i] === pool[i - 1]) { const j = pool.findIndex((w, k) => k > i && w !== pool[i] && pool[k - 1] !== w && (pool[k + 1] || '') !== pool[i - 1]); if (j > 0) [pool[i], pool[j]] = [pool[j], pool[i]]; }
+      }
+      return pool;
+    };
+    let pool = [];
+    if (!timed) {
+      weak.forEach(x => { for (let i = 0; i < LEARN_RUN; i++) pool.push(x.w); });
+      pool = spread(shuffle(pool));
+    } else {
+      const words = weak.map(x => x.w);
+      for (let r = 0; pool.length < count; r++) {
+        const round = r === 0 ? words.slice() : shuffle(words.slice()); // round 1 keeps the rule-G order
+        if (round.length > 1 && round[0] === pool[pool.length - 1]) round.push(round.shift());
+        pool = pool.concat(round);
+      }
+      pool = pool.slice(0, Math.max(count, words.length));
+    }
     // (rule H) mixed like real text: after every 3 weak words comes one common word with keys you know
     const known = knownChars(), weakSet = new Set(weak.map(x => x.w));
     const fill = TT.COMMON.slice(0, 200).filter(w => w.length > 1 && !weakSet.has(w) && [...w].every(c => known.has(c)));
     const fillers = fill.length ? Array.from({ length: Math.floor(pool.length / 3) }, () => fill[Math.floor(Math.random() * fill.length)]) : [];
-    // shuffle, then avoid the same word twice in a row where possible
-    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-    for (let i = 1; i < pool.length; i++) {
-      if (pool[i] === pool[i - 1]) { const j = pool.findIndex((w, k) => k > i && w !== pool[i] && pool[k - 1] !== w && (pool[k + 1] || '') !== pool[i - 1]); if (j > 0) [pool[i], pool[j]] = [pool[j], pool[i]]; }
-    }
     const out = [];
     pool.forEach((w, i) => { out.push(w); if (i % 3 === 2 && fillers.length) out.push(fillers.pop()); });
     return out.join(' ');

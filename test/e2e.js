@@ -481,7 +481,16 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
     await page.click('.dialog .btn.primary');
     await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
     const d3 = (await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''))).split(' ');
-    ok(!d3.includes('teacher') && !d3.includes('because') && d3.filter(w => w === 'sugar').length === 7, 'words not done today come first (G): ' + d3.join(' '));
+    const all8 = ['teacher', 'because', 'world', 'light', 'water', 'music', 'river', 'sugar'];
+    ok(all8.every(w => d3.filter(x => x === w).length === 7), 'the drill has every weak word, 7 times each: ' + d3.join(' '));
+    // timed: rounds with every word once; the first round starts with words not done today (G)
+    await page.click('.ty-head .back'); await page.waitForSelector('.drills');
+    await page.click('.timer-btn'); await page.click('#menu-pop-timer .len-opt >> text=1 min');
+    await page.click('.drill:has-text("Your weak words") >> text=Start'); await page.waitForSelector('.tt-inner');
+    const t1 = (await page.$$eval('.tt-inner .ch', els => els.map(e => e.textContent).join(''))).split(' ').filter(w => all8.includes(w));
+    ok(all8.every(w => t1.slice(0, 8).includes(w)), 'timed drill: every word in each round: ' + t1.slice(0, 16).join(' '));
+    ok(!['teacher', 'because'].includes(t1[0]) && !t1.slice(0, 6).includes('teacher'), 'timed drill starts with words not done today (G): ' + t1.slice(0, 8).join(' '));
+    await page.click('.timer-btn'); await page.click('#menu-pop-timer .len-opt >> text=Off');
     // remove one word
     await page.click('.ty-head .back'); await page.waitForSelector('.drills');
     await page.click('.drill:has-text("Your weak words") .ww-add');
